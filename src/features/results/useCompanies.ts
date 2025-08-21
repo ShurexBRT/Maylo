@@ -11,11 +11,10 @@ import {
 export function useCompanies(
   filters: Omit<CompaniesFilters, 'page' | 'pageSize'>
 ) {
-  // v5: obavezno proslediti initialPageParam; tip rezultatnog data je InfiniteData<CompaniesPage>
   return useInfiniteQuery<
     CompaniesPage,                 // TQueryFnData
     Error,                         // TError
-    InfiniteData<CompaniesPage>,   // TData (what useInfiniteQuery returns)
+    InfiniteData<CompaniesPage>,   // TData (returned shape)
     [string, typeof filters],      // TQueryKey
     number                         // TPageParam
   >({
@@ -24,6 +23,6 @@ export function useCompanies(
     queryFn: ({ pageParam }) =>
       fetchCompanies({ ...filters, page: pageParam, pageSize: 20 }),
     getNextPageParam: (lastPage) =>
-      lastPage.nextPage ?? undefined, // undefined = no next page
+      lastPage.nextPage ?? undefined,
   })
 }

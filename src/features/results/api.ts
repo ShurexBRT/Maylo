@@ -12,6 +12,7 @@ export type Company = {
   languages?: string[] | null
   rating_avg?: number | null
   rating_count?: number | null
+  created_at?: string
 }
 
 export type CompaniesPage = {
@@ -31,7 +32,6 @@ export type CompaniesFilters = {
 export async function fetchCompanies(
   { branch, country, city, page = 0, pageSize = 20 }: CompaniesFilters
 ): Promise<CompaniesPage> {
-  // Tipizovan upit i paginacija
   let q = supabase
     .from('companies')
     .select('*', { count: 'exact' })
@@ -49,6 +49,7 @@ export async function fetchCompanies(
 
   const total = count ?? 0
   const hasMore = to + 1 < total
+
   return {
     items: (data ?? []) as Company[],
     count: total,

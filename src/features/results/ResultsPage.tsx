@@ -4,26 +4,30 @@ import { useUI } from '@/lib/store'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompanies } from './useCompanies'
+import { useFavorites, useFavoriteIds } from '@/features/saved/useFavorites'
 import type { Company, CompaniesPage } from './api'
 
 export default function ResultsPage() {
   const nav = useNavigate()
   const { drawerOpen, setDrawer } = useUI()
 
-  // URL filteri
   const [params] = useSearchParams()
   const branch  = params.get('branch')  || ''
   const country = params.get('country') || ''
   const city    = params.get('city')    || ''
 
-  // React Query infinite
+  // Companies (infinite)
   const q = useCompanies({ branch, country, city })
   const items: Company[] = useMemo(
     () => q.data?.pages.flatMap((p: CompaniesPage) => p.items) ?? [],
     [q.data]
   )
 
-  // Infinite scroll sentinel
+  // Favorites
+  const { toggle } = useFavorites()
+  const favoriteIds = useFavoriteIds()
+
+  // infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (!sentinelRef.current) return
@@ -42,13 +46,26 @@ export default function ResultsPage() {
   const onCardClick = (id: string) => () => openProfile(id)
   const stop = (e: React.MouseEvent) => e.stopPropagation()
 
+  const onToggleFav = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    try {
+      await toggle(id)
+    } catch (err) {
+      const message = (err as Error)?.message || ''
+      if (message.includes('Not authenticated')) {
+        nav('/login')
+      } else {
+        console.error(err)
+      }
+    }
+  }
+
   return (
     <div onClick={() => drawerOpen && setDrawer(false)}>
       <Header />
       <Drawer />
 
       <main className="max-w-5xl mx-auto p-4">
-        {/* Loading / Error */}
         {q.isLoading && <div className="text-center py-12">Loading…</div>}
         {q.isError && (
           <div className="text-center py-12">
@@ -57,7 +74,6 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Empty state */}
         {!q.isLoading && !q.isError && items.length === 0 && (
           <div className="text-center py-12">
             <div className="text-7xl mb-4">🤖</div>
@@ -67,70 +83,70 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Results */}
         {items.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2">
-            {items.map((c) => (
-              <article
-                key={c.id}
-                className="card overflow-hidden cursor-pointer"
-                onClick={onCardClick(c.id)}
-              >
-                {/* Placeholder vizuel */}
-                <div className="mx-4 mt-4 mb-3">
-                  <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl aspect-video" />
-                </div>
-
-                <div className="px-4 pb-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-base">{c.name}</h3>
-                    <button
-                      aria-label="Save to favorites"
-                      onClick={stop}
-                      className="text-red-500 hover:scale-110 transition-transform"
-                      title="Save"
-                    >
-                      ♥
-                    </button>
+            {items.map((c) => {
+              const liked = favoriteIds.has(c.id)
+              return (
+                <article
+                  key={c.id}
+                  className="card overflow-hidden cursor-pointer"
+                  onClick={onCardClick(c.id)}
+                >
+                  <div className="mx-4 mt-4 mb-3">
+                    <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl aspect-video" />
                   </div>
 
-                  <div className="text-sm text-slate-600 mb-2">
-                    {c.category}
-                    {Array.isArray(c.languages) && c.languages.length > 0
-                      ? ` · ${c.languages.join(', ')}`
-                      : null}
-                  </div>
+                  <div className="px-4 pb-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold text-base">{c.name}</h3>
 
-                  {Array.isArray(c.languages) && c.languages.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {c.languages.map((l) => (
-                        <span key={l} className="pill">{l}</span>
-                      ))}
+                      <button
+                        aria-label={liked ? 'Remove from favorites' : 'Save to favorites'}
+                        onClick={(e) => onToggleFav(e, c.id)}
+                        className={`hover:scale-110 transition-transform ${liked ? 'text-red-500' : 'text-slate-400'}`}
+                        title={liked ? 'Remove from favorites' : 'Save to favorites'}
+                      >
+                        ♥
+                      </button>
                     </div>
-                  )}
 
-                  <div className="flex items-center gap-2 text-slate-700 mb-3">
-                    <span>📍</span>
-                    <span>
-                      {c.address ? `${c.address}, ` : ''}
-                      {c.city}{c.country ? `, ${c.country}` : ''}
-                    </span>
-                  </div>
+                    <div className="text-sm text-slate-600 mb-2">
+                      {c.category}
+                      {Array.isArray(c.languages) && c.languages.length > 0
+                        ? ` · ${c.languages.join(', ')}`
+                        : null}
+                    </div>
 
-                  <div className="flex items-center gap-4">
-                    <button onClick={stop} aria-label="Call" className="text-blue-600 hover:scale-110 transition-transform">📞</button>
-                    <button onClick={stop} aria-label="Email" className="text-blue-600 hover:scale-110 transition-transform">✉️</button>
-                    <button onClick={stop} aria-label="Open in maps" className="text-blue-600 hover:scale-110 transition-transform">🗺️</button>
+                    {Array.isArray(c.languages) && c.languages.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {c.languages.map((l) => (
+                          <span key={l} className="pill">{l}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 text-slate-700 mb-3">
+                      <span>📍</span>
+                      <span>
+                        {c.address ? `${c.address}, ` : ''}
+                        {c.city}{c.country ? `, ${c.country}` : ''}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <button onClick={stop} aria-label="Call" className="text-blue-600 hover:scale-110 transition-transform">📞</button>
+                      <button onClick={stop} aria-label="Email" className="text-blue-600 hover:scale-110 transition-transform">✉️</button>
+                      <button onClick={stop} aria-label="Open in maps" className="text-blue-600 hover:scale-110 transition-transform">🗺️</button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
         )}
 
-        {/* Sentinel */}
         <div ref={sentinelRef} className="h-12" />
-
         {q.isFetchingNextPage && items.length > 0 && (
           <div className="text-center py-6 text-slate-600">Loading more…</div>
         )}
