@@ -7,22 +7,25 @@ import '@/styles/globals.css'
 // Layout
 import Layout from './Layout'
 
-// Pages (stubs / postojeće)
+// Public pages
 import HomePage from '@/features/search/HomePage'
 import ResultsPage from '@/features/results/ResultsPage'
 import ProfilePage from '@/features/profile/ProfilePage'
 import SavedPage from '@/features/saved/SavedPage'
 
-// Optional (stubs – možeš dodati kasnije prave)
-const NotFound = () => <main className="max-w-5xl mx-auto p-6">404 – Page not found</main>
-const LoginPage = () => <main className="max-w-md mx-auto p-6">Login (stub)</main>
-const SignupPage = () => <main className="max-w-md mx-auto p-6">Sign up (stub)</main>
-const AccountPage = () => <main className="max-w-3xl mx-auto p-6">My Account (stub)</main>
-const SettingsPage = () => <main className="max-w-3xl mx-auto p-6">Settings (stub)</main>
-const WriteReviewPage = () => <main className="max-w-3xl mx-auto p-6">Write Review (stub)</main>
+// Auth pages (prave, ne stubovi)
+import LoginPage from '@/features/auth/LoginPage'
+import SignupPage from '@/features/auth/SignupPage'
+import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
+import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
+
+// Optional provider onboarding (možemo kasnije)
 const ProviderOnboard = () => <main className="max-w-3xl mx-auto p-6">Provider Onboarding (stub)</main>
 
-export default function App(){
+// Minimalna 404
+const NotFound = () => <main className="max-w-5xl mx-auto p-6">404 – Page not found</main>
+
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -34,15 +37,18 @@ export default function App(){
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/profile/:id" element={<ProfilePage />} />
               <Route path="/saved" element={<SavedPage />} />
-              <Route path="/account" element={<AccountPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/write-review/:id" element={<WriteReviewPage />} />
-              <Route path="/provider/onboard" element={<ProviderOnboard />} />
+              <Route path="/write-review/:id" element={<Protected><WriteReviewFallback /></Protected>} />
+              <Route path="/provider/onboard" element={<Protected role="provider"><ProviderOnboard /></Protected>} />
             </Route>
 
-            {/* Auth rute bez glavnog layouta (po želji ih možeš staviti i u Layout) */}
+            {/* Auth bez layouta (po želji može i u Layout) */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+            {/* OAuth callback – može samo redirect na / ili /account */}
+            <Route path="/auth/callback" element={<LoginPage />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
@@ -52,3 +58,10 @@ export default function App(){
     </QueryClientProvider>
   )
 }
+
+/** Fallback za /write-review/:id dok ne ubacimo pravu WriteReviewPage */
+function WriteReviewFallback() {
+  return <main className="max-w-3xl mx-auto p-6">Write Review</main>
+}
+import Protected from '@/components/Protected'
+
