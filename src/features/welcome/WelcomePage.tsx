@@ -36,13 +36,6 @@ export default function WelcomePage() {
           Sign up
         </Link>
       </div>
-
-      {/* Optional: link back home */}
-      <div className="mt-6 text-center">
-        <Link to="/" className="text-blue-700 hover:underline">
-          Back to Home
-        </Link>
-      </div>
     </main>
   )
 }
