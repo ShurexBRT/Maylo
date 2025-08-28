@@ -18,6 +18,10 @@ import LoginPage from '@/features/auth/LoginPage'
 import SignupPage from '@/features/auth/SignupPage'
 import AuthCallbackPage from '@/features/auth/AuthCallbackPage'
 import SetPasswordPage from '@/features/auth/SetPasswordPage'
+import FAQPage from '@/features/faq/FAQPage'
+import OnboardPage from '@/features/providers/OnboardPage'
+
+
 
 const NotFound = () => <main className="max-w-5xl mx-auto p-6">404 – Page not found</main>
 
@@ -36,6 +40,7 @@ export default function App() {
               <Route path="/account" element={<AccountPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/set-password" element={<SetPasswordPage />} />
+              <Route path="/provider/onboard" element={<OnboardPage />} />
             </Route>
 
             {/* auth rute bez glavnog layouta po želji */}
@@ -43,6 +48,10 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
+            {/* faq Page*/}
+            <Route path="/faq" element={<FAQPage />} />
+
+            {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
