@@ -17,7 +17,12 @@
   .btn-icon {
     @apply inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-100;
   }
-  .btn-primary { @apply inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition; }
+  .btn-primary { 
+    @apply inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition; 
+  }
+  .btn-secondary {
+     @apply bg-slate-100 text-slate-900 font-semibold rounded-xl py-3 px-4 hover:bg-slate-200 transition; 
+    }
 
   /* Pills / Tags */
   .pill {

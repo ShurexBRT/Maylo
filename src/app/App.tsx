@@ -20,6 +20,7 @@ import AuthCallbackPage from '@/features/auth/AuthCallbackPage'
 import SetPasswordPage from '@/features/auth/SetPasswordPage'
 import FAQPage from '@/features/faq/FAQPage'
 import OnboardPage from '@/features/providers/OnboardPage'
+import WelcomePage from '@/features/welcome/WelcomePage'
 
 
 
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/welcome" element={<WelcomePage />} />
 
             {/* faq Page*/}
             <Route path="/faq" element={<FAQPage />} />
