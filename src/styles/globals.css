@@ -59,6 +59,24 @@
   .drawer-item {
     @apply flex items-center gap-3 px-5 py-3 text-slate-700 hover:bg-slate-50 rounded-none;
   }
+   /* Backdrop */
+  .drawer-backdrop {
+    @apply fixed inset-0 bg-black/40 z-[990] opacity-0 pointer-events-none transition-opacity;
+  }
+  .drawer-backdrop.open {
+    @apply opacity-100 pointer-events-auto;
+  }
+    /* Drawer panel */
+  .drawer-panel {
+    @apply fixed top-0 right-0 h-screen w-[78%] max-w-[360px]
+           bg-white shadow-2xl ring-1 ring-slate-200
+           translate-x-full will-change-transform
+           z-[1000] transition-transform duration-300;
+  }
+  .drawer-panel.open {
+    @apply translate-x-0;
+  }
+
 
 }
 

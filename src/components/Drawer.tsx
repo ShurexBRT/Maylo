@@ -1,126 +1,154 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { LogIn, LogOut, Bookmark, Settings, User, Building2, X } from 'lucide-react'
+// src/components/Drawer.tsx
+import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useUI } from '@/lib/store'
+import { useSession, useProfile, useCanAddBusiness } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
-type SessionLite = {
-  user: { id: string; email?: string | null } | null
-} | null
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="py-2">
+      <div className="drawer-group-title">{title}</div>
+      <ul className="drawer-list">{children}</ul>
+    </div>
+  )
+}
+
+function Item({
+  label,
+  onClick,
+  active,
+}: {
+  label: string
+  onClick: () => void
+  active?: boolean
+}) {
+  return (
+    <li>
+      <button
+        className={`drawer-item ${active ? 'active' : ''}`}
+        onClick={onClick}
+      >
+        {label}
+      </button>
+    </li>
+  )
+}
 
 export default function Drawer() {
   const { drawerOpen, setDrawer } = useUI()
-  const [session, setSession] = useState<SessionLite>(null)
-  const navigate = useNavigate()
+  const { userId } = useSession()
+  const { profile } = useProfile(userId)
+  const canAddBiz = useCanAddBusiness(userId, profile?.role)
+  const nav = useNavigate()
+  const loc = useLocation()
 
-  // ← učitamo session i pratimo promene auth stanja
+  // Lock scroll kada je otvoren
   useEffect(() => {
-    let isMounted = true
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (!isMounted) return
-      setSession(data?.session ? { user: data.session.user } : null)
-    })
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s ? { user: s.user } : null)
-    })
-
-    return () => {
-      isMounted = false
-      sub.subscription?.unsubscribe()
+    const root = document.documentElement
+    if (drawerOpen) {
+      root.classList.add('overflow-hidden')
+    } else {
+      root.classList.remove('overflow-hidden')
     }
-  }, [])
+    return () => root.classList.remove('overflow-hidden')
+  }, [drawerOpen])
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
+  function go(to: string) {
     setDrawer(false)
-    navigate('/')
+    nav(to)
   }
 
-  // ----- meni: bez "Results" (po dogovoru)
-  const itemsWhenLoggedIn = [
-    { to: '/saved', label: 'Saved', icon: <Bookmark className="w-5 h-5" /> },
-    { to: '/account', label: 'My Account', icon: <User className="w-5 h-5" /> },
-    { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
-    { to: '/provider/onboard', label: 'Add your business', icon: <Building2 className="w-5 h-5" /> },
-  ]
-
-  const itemsWhenAnon = [
-    { to: '/saved', label: 'Saved', icon: <Bookmark className="w-5 h-5" /> },
-    { to: '/provider/onboard', label: 'Add your business', icon: <Building2 className="w-5 h-5" /> },
-  ]
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut()
+      setDrawer(false)
+      nav('/welcome', { replace: true })
+    } catch (e) {
+      console.error('Logout error', e)
+      window.location.assign('/welcome')
+    }
+  }
 
   return (
-    <aside
-      className={`drawer ${drawerOpen ? 'open' : ''}`}
-      aria-hidden={!drawerOpen}
-    >
-      {/* Header unutar drawer-a */}
-      <div className="drawer-head">
-        <div className="flex items-center gap-2">
-          <img src="/icons/icon-192.png" alt="Maylo" className="logo" />
-          <span className="brand">Maylo</span>
+    <>
+      {/* Backdrop */}
+      <div
+        className={`drawer-backdrop ${drawerOpen ? 'open' : ''}`}
+        onClick={() => setDrawer(false)}
+      />
+
+      {/* Panel */}
+      <aside
+        className={`drawer-panel ${drawerOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!drawerOpen}
+      >
+        {/* Header unutar panela */}
+        <div className="drawer-head">
+          <div className="flex items-center gap-2">
+            <img src="/icons/icon-192.png" alt="Maylo" className="w-8 h-8" />
+            <span className="text-lg font-semibold text-slate-800">Maylo</span>
+          </div>
+          <button
+            className="btn-icon"
+            aria-label="Close"
+            onClick={() => setDrawer(false)}
+          >
+            ✕
+          </button>
         </div>
 
-        <button
-          aria-label="Close menu"
-          className="btn-icon"
-          onClick={() => setDrawer(false)}
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
+        {/* Sadržaj */}
+        <nav className="py-2">
+          <Group title="General">
+            <Item label="Saved" onClick={() => go('/saved')} active={loc.pathname.startsWith('/saved')} />
+            {userId && (
+              <Item label="My Account" onClick={() => go('/account')} active={loc.pathname.startsWith('/account')} />
+            )}
+            <Item label="Settings" onClick={() => go('/settings')} active={loc.pathname.startsWith('/settings')} />
+          </Group>
 
-      {/* User info (ako je logovan) */}
-      {session?.user && (
-        <div className="drawer-user">
-          <div className="text-xs text-slate-500">Email</div>
-          <div className="font-medium">{session.user.email}</div>
-        </div>
-      )}
-
-      <nav className="mt-2">
-        <ul className="space-y-1">
-          {(session?.user ? itemsWhenLoggedIn : itemsWhenAnon).map((it) => (
-            <li key={it.label}>
-              <Link
-                to={it.to}
-                className="drawer-item"
-                onClick={() => setDrawer(false)}
-              >
-                {it.icon}
-                <span>{it.label}</span>
-              </Link>
-            </li>
-          ))}
-
-          {/* Login/Signup ili Logout */}
-          {session?.user ? (
-            <li>
-              <button className="drawer-item w-full text-left" onClick={handleLogout}>
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
-            </li>
-          ) : (
-            <>
-              <li>
-                <Link to="/login" className="drawer-item" onClick={() => setDrawer(false)}>
-                  <LogIn className="w-5 h-5" />
-                  <span>Login</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/signup" className="drawer-item" onClick={() => setDrawer(false)}>
-                  <User className="w-5 h-5" />
-                  <span>Sign up</span>
-                </Link>
-              </li>
-            </>
+          {(userId && (profile?.role === 'provider' || profile?.role === 'admin') && canAddBiz) && (
+            <Group title="Business">
+              <Item label="Add your business" onClick={() => go('/provider/onboard')} active={loc.pathname.startsWith('/provider')} />
+            </Group>
           )}
-        </ul>
-      </nav>
-    </aside>
+
+          <Group title="Help">
+            <Item label="FAQ" onClick={() => go('/faq')} active={loc.pathname.startsWith('/faq')} />
+            <Item label="Contact" onClick={() => go('/contact')} active={loc.pathname.startsWith('/contact')} />
+            <Item label="Terms" onClick={() => go('/terms')} active={loc.pathname.startsWith('/terms')} />
+          </Group>
+
+          {/* Auth actions */}
+          {!userId ? (
+            <div className="px-3 pt-1 space-y-2">
+              <button className="btn-primary w-full" onClick={() => go('/login')}>Login</button>
+              <button
+                className="w-full rounded-xl border border-slate-300 py-2 font-medium hover:bg-slate-50"
+                onClick={() => go('/signup')}
+              >
+                Sign up
+              </button>
+            </div>
+          ) : (
+            <div className="px-3 pt-1">
+              <button
+                className="w-full rounded-xl bg-slate-100 py-2 font-medium hover:bg-slate-200"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </nav>
+
+        <div className="px-5 py-4 text-xs text-slate-400 mt-auto">
+          © {new Date().getFullYear()} Maylo
+        </div>
+      </aside>
+    </>
   )
 }

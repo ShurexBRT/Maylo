@@ -10,7 +10,6 @@ export default function Header() {
       <div className="header-inner">
         {/* left: logo + brand */}
         <Link to="/" className="flex items-center gap-2">
-          {/* Stavi fajl u /public/assets/maylo/maylo-logo.png */}
           <img src="/icons/icon-192.png" alt="Maylo" className="logo" />
           <span className="brand">Maylo</span>
         </Link>
@@ -22,6 +21,7 @@ export default function Header() {
           className="btn-icon"
           onClick={() => setDrawer(true)}
         >
+          <span className="material-icons"></span>
           <Menu className="w-6 h-6 text-slate-800" />
         </button>
       </div>
