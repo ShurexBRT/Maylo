@@ -3,6 +3,8 @@ import Drawer from '@/components/Drawer'
 import { useUI } from '@/lib/store'
 import { useFavorites } from './useFavorites'
 import { useNavigate } from 'react-router-dom'
+import '@/styles/globals.css'
+
 
 export default function SavedPage(){
   const nav = useNavigate()
@@ -30,8 +32,6 @@ export default function SavedPage(){
 
   return (
     <div onClick={() => drawerOpen && setDrawer(false)}>
-      <Header />
-      <Drawer />
 
       <main className="max-w-3xl mx-auto p-4">
         {isLoading && <div className="text-center py-12">Loading…</div>}

@@ -4,6 +4,8 @@ import { useUI } from '@/lib/store'
 import { useForm } from 'react-hook-form'
 import { useResetPassword } from './hooks'
 import { useNavigate } from 'react-router-dom'
+import '@/styles/globals.css'
+
 
 export default function ResetPasswordPage() {
   const nav = useNavigate()
@@ -23,7 +25,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div onClick={() => drawerOpen && setDrawer(false)}>
-      <Header /><Drawer />
+    
       <main className="max-w-sm mx-auto p-4">
         <h1 className="text-xl font-semibold mb-4">Reset password</h1>
         <form className="card p-4 space-y-3" onSubmit={handleSubmit(onSubmit)} onClick={(e)=>e.stopPropagation()}>

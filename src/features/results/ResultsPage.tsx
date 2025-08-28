@@ -6,6 +6,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompanies } from './useCompanies'
 import { useFavorites, useFavoriteIds } from '@/features/saved/useFavorites'
 import type { Company, CompaniesPage } from './api'
+import '@/styles/globals.css'
+
 
 export default function ResultsPage() {
   const nav = useNavigate()
@@ -62,8 +64,7 @@ export default function ResultsPage() {
 
   return (
     <div onClick={() => drawerOpen && setDrawer(false)}>
-      <Header />
-      <Drawer />
+   
 
       <main className="max-w-5xl mx-auto p-4">
         {q.isLoading && <div className="text-center py-12">Loading…</div>}

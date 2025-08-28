@@ -1,13 +1,103 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-.btn-primary { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold bg-blue-600 text-white hover:bg-blue-700; }
-.btn-secondary { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold border border-blue-600 text-blue-600 hover:bg-blue-50; }
-.card { @apply rounded-2xl shadow-sm border border-slate-200 bg-white; }
-.pill { @apply inline-flex items-center rounded-full px-3 py-1 text-sm bg-blue-50 text-blue-700; }
-.header { @apply sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-slate-50; }
-.logo { @apply w-10 h-auto; }
-.drawer { @apply fixed top-0 right-0 w-72 h-screen bg-white shadow-2xl p-6 translate-x-full transition-transform; }
-.drawer.open { @apply translate-x-0; }
+/* ======== COMPONENTS (shared UI) ======== */
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold transition;
+  }
+  .btn-primary {
+    @apply btn bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-600 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-blue-700 hover:bg-blue-50;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-100;
+  }
+
+  /* Pills / Tags */
+  .pill {
+    @apply inline-flex items-center rounded-full bg-slate-100 text-slate-700 text-xs px-2.5 py-1;
+  }
+
+  /* Cards */
+  .card {
+    @apply rounded-xl bg-white shadow-sm ring-1 ring-slate-200;
+  }
+  .card-body {
+    @apply p-4;
+  }
+  .card-row {
+    @apply flex items-center gap-3;
+  }
+
+  /* Form fields */
+  .field {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2
+           focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+  .field-disabled {
+    @apply bg-slate-100 text-slate-400 cursor-not-allowed;
+  }
+
+   /* Drawer panel i elementi */
+  .drawer { @apply fixed top-0 right-0 z-50 h-screen w-72 translate-x-full bg-white shadow-2xl ring-1 ring-slate-200 transition-transform; }
+  .drawer.open { @apply translate-x-0; }
+
+  .drawer-head { @apply flex items-center justify-between px-5 py-4 border-b border-slate-200; }
+  .drawer-user { @apply px-5 py-3 border-b border-slate-100; }
+
+  .drawer-item {
+    @apply flex items-center gap-3 px-5 py-3 text-slate-700 hover:bg-slate-50 rounded-none;
+  }
+
+}
+
+/* ======== LAYOUT bits (header/drawer/footer) ======== */
+@layer utilities {
+  .app-header {
+    @apply sticky top-0 z-40 w-full bg-white/80 backdrop-blur
+           ring-1 ring-slate-200;
+  }
+  .header-inner {
+    @apply max-w-6xl mx-auto flex items-center justify-between px-4 py-3;
+  }
+
+  .drawer {
+    @apply fixed top-0 right-0 z-50 h-screen w-72 translate-x-full
+           bg-white shadow-2xl ring-1 ring-slate-200 transition-transform;
+  }
+  .drawer.open { @apply translate-x-0; }
+  .drawer-item {
+    @apply flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50;
+  }
+
+  .page {
+    @apply max-w-3xl mx-auto px-4 py-6;
+  }
+
+  .grid-cards {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+
+  @layer components {
+  .logo {
+    @apply h-10 w-auto; /* ograniči visinu na ~40px, širina proporcionalna */
+  }
+
+  .app-header {
+    @apply sticky top-0 z-40 w-full bg-white/80 backdrop-blur ring-1 ring-slate-200;
+  }
+  .header-inner {
+    @apply max-w-6xl mx-auto flex items-center justify-between px-4 py-3;
+  }
+
+  .brand {
+    @apply text-lg font-bold text-blue-800;
+  }
+}
+
+}

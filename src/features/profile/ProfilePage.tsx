@@ -6,6 +6,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useCompany } from './useCompany'
 import { useFavorites, useFavoriteIds } from '@/features/saved/useFavorites'
 import { useEffect } from 'react'
+import '@/styles/globals.css'
+
 
 export default function ProfilePage(){
   const nav = useNavigate()
@@ -45,9 +47,7 @@ export default function ProfilePage(){
 
   return (
     <div>
-      <Header />
-      <Drawer />
-
+     
       <main className="max-w-4xl mx-auto p-4" onClick={(e) => e.stopPropagation()}>
         {q.isLoading && <div className="text-center py-12">Loading…</div>}
         {q.isError && (

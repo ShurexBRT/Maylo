@@ -1,31 +1,30 @@
 import { Link } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import { useUI } from '@/lib/store'
 
-export default function Header(){
-  const { drawerOpen, setDrawer } = useUI()
+export default function Header() {
+  const { setDrawer } = useUI()
 
   return (
-    <header className="header">
-      <Link to="/" aria-label="Home" className="flex items-center gap-2">
-        {/* Ubaci pravu ikonu kada je dodaš u src/assets */}
-        <img src="/icons/icon-192.png" alt="Maylo" className="logo" />
-        <span className="font-bold text-blue-700">Maylo</span>
-      </Link>
+    <header className="app-header">
+      <div className="header-inner">
+        {/* left: logo + brand */}
+        <Link to="/" className="flex items-center gap-2">
+          {/* Stavi fajl u /public/assets/maylo/maylo-logo.png */}
+          <img src="/icons/icon-192.png" alt="Maylo" className="logo" />
+          <span className="brand">Maylo</span>
+        </Link>
 
-      <nav className="hidden md:flex items-center gap-4 text-sm">
-        <Link to="/results" className="hover:underline">Results</Link>
-        <Link to="/saved" className="hover:underline">Saved</Link>
-        <Link to="/provider/onboard" className="hover:underline">Add your business</Link>
-        <Link to="/login" className="btn-secondary">Login</Link>
-      </nav>
-
-      <button
-        aria-label="Menu"
-        className="md:hidden text-2xl"
-        onClick={() => setDrawer(!drawerOpen)}
-      >
-        ☰
-      </button>
+        {/* right: hamburger */}
+        <button
+          type="button"
+          aria-label="Menu"
+          className="btn-icon"
+          onClick={() => setDrawer(true)}
+        >
+          <Menu className="w-6 h-6 text-slate-800" />
+        </button>
+      </div>
     </header>
   )
 }

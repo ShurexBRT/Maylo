@@ -4,6 +4,8 @@ import { useUI } from '@/lib/store'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useLogin, useOAuth } from './hooks'
+import '@/styles/globals.css'
+
 
 type Form = { email: string; password: string }
 
@@ -27,7 +29,7 @@ export default function LoginPage() {
 
   return (
     <div onClick={() => drawerOpen && setDrawer(false)}>
-      <Header /><Drawer />
+     
       <main className="max-w-sm mx-auto p-4">
         <h1 className="text-xl font-semibold mb-4">Log in</h1>
 

@@ -3,6 +3,8 @@ import Drawer from '@/components/Drawer'
 import { useUI } from '@/lib/store'
 import { useForm } from 'react-hook-form'
 import { useForgotPassword } from './hooks'
+import '@/styles/globals.css'
+
 
 export default function ForgotPasswordPage() {
   const { drawerOpen, setDrawer } = useUI()
@@ -20,7 +22,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div onClick={() => drawerOpen && setDrawer(false)}>
-      <Header /><Drawer />
+      
       <main className="max-w-sm mx-auto p-4">
         <h1 className="text-xl font-semibold mb-4">Forgot password</h1>
         <form className="card p-4 space-y-3" onSubmit={handleSubmit(onSubmit)} onClick={(e)=>e.stopPropagation()}>

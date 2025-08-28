@@ -2,7 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Header from '@/components/Header'
 import Drawer from '@/components/Drawer'
 import Footer from '@/components/Footer'
-import '@/styles/layout.css'
+import '@/styles/globals.css'
 import { useUI } from '@/lib/store'
 import { useEffect } from 'react'
 
