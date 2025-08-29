@@ -1,16 +1,22 @@
-
+// src/main.tsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './app/App'
-import './styles/globals.css'
-import { createRoot } from 'react-dom/client'
-
-
-// ovo omogućava da se SW registruje i auto-update radi
 import { registerSW } from 'virtual:pwa-register'
-registerSW({ immediate: true })
+import App from './app/App'
+import '.styles/global.css'
 
-createRoot(document.getElementById('root')!).render(<App />)
+// registracija SW (radi samo kad plugin postoji u buildu)
+if ('serviceWorker' in navigator) {
+  registerSW({
+    immediate: true,              // čim učita app
+    onNeedRefresh() {
+      // po želji: možeš da prikažeš toast da postoji nova verzija
+    },
+    onOfflineReady() {
+      // po želji: obaveštenje "app spremna za offline"
+    }
+  })
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
