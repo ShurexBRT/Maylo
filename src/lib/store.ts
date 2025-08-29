@@ -1,16 +1,11 @@
-
 import { create } from 'zustand'
 
 type UIState = {
   drawerOpen: boolean
-  setDrawer: (v: boolean) => void
-  lang: 'en'|'sr'
-  setLang: (l: 'en'|'sr') => void
+  setDrawer: (open: boolean) => void
 }
 
 export const useUI = create<UIState>((set) => ({
-  drawerOpen: false,
-  setDrawer: (v) => set({ drawerOpen: v }),
-  lang: 'en',
-  setLang: (l) => set({ lang: l })
+  drawerOpen: false,                 // <-- default false
+  setDrawer: (open) => set({ drawerOpen: open }),
 }))

@@ -1,47 +1,39 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { enableGuest } from '@/lib/guest'
+import welcomeImg from '@/assets/illustrations/welcome.png' // <-- import asseta
+import { markGuestSession } from '@/app/StartupGate'
+import { clearGuestSession } from '@/app/StartupGate'
 
 export default function WelcomePage() {
-  const navigate = useNavigate()
+  const nav = useNavigate()
+
+  const onGuest = () => {
+    // evidentiramo “guest” pa pustamo korisnika u app
+    markGuestSession()
+    nav('/', { replace: true })
+  }
+
+  // ako se iz nekog razloga došlo na welcome nakon logout-a,
+  // obriši potencijalne stare flagove
+  clearGuestSession()
 
   return (
     <main className="max-w-md mx-auto px-4 py-10 text-center">
-      {/* Illustration (stavi svoju putanju/asset po želji) */}
       <img
-        src="src/assets/illustrations/welcome.png"
-        alt="Welcome to Maylo"
-        className="mx-auto w-56 h-auto mb-6"
+        src={welcomeImg}
+        alt="Maylo welcomes you"
+        className="w-56 mx-auto mb-6"
         loading="eager"
       />
 
-      <h1 className="text-2xl font-bold text-slate-900">Welcome to Maylo</h1>
-      <p className="mt-2 text-slate-600">
-        Find local services in a language you understand.
+      <h1 className="text-2xl font-bold mb-2">Welcome to Maylo</h1>
+      <p className="text-gray-600 mb-8">
+        Find local services in the language you understand.
       </p>
 
-      <div className="mt-8 space-y-3">
-        <Link to="/login" className="btn-primary w-full inline-flex justify-center">
-          Log in
-        </Link>
-        <Link to="/signup" className="btn-secondary w-full inline-flex justify-center">
-          Sign up
-        </Link>
-        <button
-          className="btn-ghost w-full"
-          onClick={() => {
-            enableGuest()
-            navigate('/', { replace: true })
-          }}
-        >
-          Continue as guest
-        </button>
-      </div>
-
-      {/* (optional) Footer links */}
-      <div className="mt-8 text-sm text-slate-500 space-x-4">
-        <Link to="/faq" className="hover:underline">FAQ</Link>
-        <Link to="/terms" className="hover:underline">Terms</Link>
-        <Link to="/contact" className="hover:underline">Contact</Link>
+      <div className="flex flex-col gap-3">
+        <Link to="/login" className="btn-primary">Log in</Link>
+        <Link to="/signup" className="btn-secondary">Sign up</Link>
+        <button onClick={onGuest} className="btn-ghost">Continue as guest</button>
       </div>
     </main>
   )

@@ -11,18 +11,19 @@ export default function Layout() {
   const location = useLocation()
 
   useEffect(() => {
+    // svaki prelaz rute zatvara drawer
     if (drawerOpen) setDrawer(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 
   return (
     <div className="min-h-screen flex flex-col">
-      {drawerOpen && (
+      {drawerOpen ? (
         <div
           className="fixed inset-0 bg-black/30 z-40 md:hidden"
           onClick={() => setDrawer(false)}
         />
-      )}
+      ) : null}
 
       <Header />
       <Drawer />
