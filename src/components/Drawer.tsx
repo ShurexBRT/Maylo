@@ -1,154 +1,102 @@
 // src/components/Drawer.tsx
-import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useUI } from '@/lib/store'
-import { useSession, useProfile, useCanAddBusiness } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
-
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="py-2">
-      <div className="drawer-group-title">{title}</div>
-      <ul className="drawer-list">{children}</ul>
-    </div>
-  )
-}
-
-function Item({
-  label,
-  onClick,
-  active,
-}: {
-  label: string
-  onClick: () => void
-  active?: boolean
-}) {
-  return (
-    <li>
-      <button
-        className={`drawer-item ${active ? 'active' : ''}`}
-        onClick={onClick}
-      >
-        {label}
-      </button>
-    </li>
-  )
-}
+import { useSession, useProfile, useCanAddBusiness } from '@/lib/authState'
+import { signOutTo } from '@/lib/auth'
 
 export default function Drawer() {
+  const navigate = useNavigate()
   const { drawerOpen, setDrawer } = useUI()
   const { userId } = useSession()
   const { profile } = useProfile(userId)
-  const canAddBiz = useCanAddBusiness(userId, profile?.role)
-  const nav = useNavigate()
-  const loc = useLocation()
+  const canAddBusiness = useCanAddBusiness(userId, profile?.role)
 
-  // Lock scroll kada je otvoren
-  useEffect(() => {
-    const root = document.documentElement
-    if (drawerOpen) {
-      root.classList.add('overflow-hidden')
-    } else {
-      root.classList.remove('overflow-hidden')
-    }
-    return () => root.classList.remove('overflow-hidden')
-  }, [drawerOpen])
-
-  function go(to: string) {
-    setDrawer(false)
-    nav(to)
-  }
-
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut()
-      setDrawer(false)
-      nav('/welcome', { replace: true })
-    } catch (e) {
-      console.error('Logout error', e)
-      window.location.assign('/welcome')
-    }
-  }
+  const close = () => setDrawer(false)
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={`drawer-backdrop ${drawerOpen ? 'open' : ''}`}
-        onClick={() => setDrawer(false)}
-      />
+    <aside
+      className={`drawer ${drawerOpen ? 'open' : ''} fixed top-0 right-0 h-screen w-72 bg-white shadow-2xl z-[1000] transition-transform`}
+      aria-hidden={!drawerOpen}
+    >
+      <div className="p-4 border-b flex items-center justify-between">
+        <span className="text-xl font-semibold">Maylo</span>
+        <button
+          className="text-gray-500 hover:text-gray-700"
+          onClick={close}
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
 
-      {/* Panel */}
-      <aside
-        className={`drawer-panel ${drawerOpen ? 'open' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-hidden={!drawerOpen}
-      >
-        {/* Header unutar panela */}
-        <div className="drawer-head">
-          <div className="flex items-center gap-2">
-            <img src="/icons/icon-192.png" alt="Maylo" className="w-8 h-8" />
-            <span className="text-lg font-semibold text-slate-800">Maylo</span>
-          </div>
-          <button
-            className="btn-icon"
-            aria-label="Close"
-            onClick={() => setDrawer(false)}
-          >
-            ✕
-          </button>
-        </div>
+      <nav className="p-2">
+        <ul className="space-y-1">
+          <li>
+            <Link to="/saved" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+              Saved
+            </Link>
+          </li>
 
-        {/* Sadržaj */}
-        <nav className="py-2">
-          <Group title="General">
-            <Item label="Saved" onClick={() => go('/saved')} active={loc.pathname.startsWith('/saved')} />
-            {userId && (
-              <Item label="My Account" onClick={() => go('/account')} active={loc.pathname.startsWith('/account')} />
-            )}
-            <Item label="Settings" onClick={() => go('/settings')} active={loc.pathname.startsWith('/settings')} />
-          </Group>
-
-          {(userId && (profile?.role === 'provider' || profile?.role === 'admin') && canAddBiz) && (
-            <Group title="Business">
-              <Item label="Add your business" onClick={() => go('/provider/onboard')} active={loc.pathname.startsWith('/provider')} />
-            </Group>
+          {userId && (
+            <li>
+              <Link to="/account" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                My Account
+              </Link>
+            </li>
           )}
 
-          <Group title="Help">
-            <Item label="FAQ" onClick={() => go('/faq')} active={loc.pathname.startsWith('/faq')} />
-            <Item label="Contact" onClick={() => go('/contact')} active={loc.pathname.startsWith('/contact')} />
-            <Item label="Terms" onClick={() => go('/terms')} active={loc.pathname.startsWith('/terms')} />
-          </Group>
+          {userId && (
+            <li>
+              <Link to="/settings" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                Settings
+              </Link>
+            </li>
+          )}
+
+          {/* Provider UX */}
+          {userId && (profile?.role === 'provider' || profile?.role === 'admin') && (
+            <li>
+              {canAddBusiness ? (
+                <Link to="/provider/onboard" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                  Add your business
+                </Link>
+              ) : (
+                <Link to="/provider/edit" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                  Edit your business
+                </Link>
+              )}
+            </li>
+          )}
 
           {/* Auth actions */}
           {!userId ? (
-            <div className="px-3 pt-1 space-y-2">
-              <button className="btn-primary w-full" onClick={() => go('/login')}>Login</button>
-              <button
-                className="w-full rounded-xl border border-slate-300 py-2 font-medium hover:bg-slate-50"
-                onClick={() => go('/signup')}
-              >
-                Sign up
-              </button>
-            </div>
+            <>
+              <li>
+                <Link to="/login" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                  Login
+                </Link>
+              </li>
+              <li>
+                <Link to="/signup" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                  Sign up
+                </Link>
+              </li>
+            </>
           ) : (
-            <div className="px-3 pt-1">
+            <li>
               <button
-                className="w-full rounded-xl bg-slate-100 py-2 font-medium hover:bg-slate-200"
-                onClick={handleLogout}
+                onClick={async () => {
+                  close()
+                  await signOutTo('/welcome')
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-md text-red-600"
               >
                 Logout
               </button>
-            </div>
+            </li>
           )}
-        </nav>
-
-        <div className="px-5 py-4 text-xs text-slate-400 mt-auto">
-          © {new Date().getFullYear()} Maylo
-        </div>
-      </aside>
-    </>
+        </ul>
+      </nav>
+    </aside>
   )
 }
