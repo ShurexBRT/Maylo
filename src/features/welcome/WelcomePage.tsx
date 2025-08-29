@@ -8,7 +8,7 @@ export default function WelcomePage() {
     <main className="max-w-md mx-auto px-4 py-10 text-center">
       {/* Illustration (stavi svoju putanju/asset po želji) */}
       <img
-        src="/illustrations/welcome.png"
+        src="src/assets/illustrations/welcome.png"
         alt="Welcome to Maylo"
         className="mx-auto w-56 h-auto mb-6"
         loading="eager"
