@@ -1,40 +1,103 @@
-import Header from '@/components/Header'
-import Drawer from '@/components/Drawer'
-import { useUI } from '@/lib/store'
-import { useForm } from 'react-hook-form'
-import { useResetPassword } from './hooks'
-import { useNavigate } from 'react-router-dom'
-import '@/styles/globals.css'
+// src/features/auth/ResetPasswordPage.tsx
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
+import { useResetPassword } from "./hooks";
+
+type Form = {
+  password: string;
+  confirm: string;
+};
 
 export default function ResetPasswordPage() {
-  const nav = useNavigate()
-  const { drawerOpen, setDrawer } = useUI()
-  const reset = useResetPassword()
-  const { register, handleSubmit } = useForm<{ password: string }>()
+  const nav = useNavigate();
+  const reset = useResetPassword();
 
-  const onSubmit = async (v: { password: string }) => {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<Form>({
+    defaultValues: {
+      password: "",
+      confirm: "",
+    },
+  });
+
+  const passwordValue = watch("password");
+
+  const onSubmit = async (v: Form) => {
     try {
-      await reset.mutateAsync(v.password)
-      alert('Password updated. You can sign in now.')
-      nav('/login')
+      await reset.mutateAsync(v.password);
+      nav("/login");
     } catch {
-      alert('Failed to update password.')
+      // greška je u reset.error, prikazaćemo je ispod
     }
-  }
+  };
+
+  const genericError = (reset.error as Error | null)?.message
+    ? (reset.error as Error).message
+    : "Failed to update password. Please try again.";
 
   return (
-    <div onClick={() => drawerOpen && setDrawer(false)}>
-    
-      <main className="max-w-sm mx-auto p-4">
-        <h1 className="text-xl font-semibold mb-4">Reset password</h1>
-        <form className="card p-4 space-y-3" onSubmit={handleSubmit(onSubmit)} onClick={(e)=>e.stopPropagation()}>
-          <input {...register('password')} type="password" placeholder="New password" className="w-full border p-3 rounded-lg"/>
-          <button className="btn-primary w-full" disabled={reset.isPending}>
-            {reset.isPending ? 'Updating…' : 'Update password'}
-          </button>
-        </form>
-      </main>
-    </div>
-  )
+    <main className="mx-auto max-w-sm p-4">
+      <h1 className="mb-4 text-xl font-semibold">Reset password</h1>
+
+      <form
+        className="card space-y-3 p-4"
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <div>
+          <input
+            type="password"
+            placeholder="New password"
+            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            {...register("password", {
+              required: "Password is required",
+              minLength: {
+                value: 6,
+                message:
+                  "Password should be at least 6 characters long",
+              },
+            })}
+          />
+          {errors.password && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <input
+            type="password"
+            placeholder="Confirm password"
+            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            {...register("confirm", {
+              required: "Please confirm your password",
+              validate: (value) =>
+                value === passwordValue || "Passwords do not match",
+            })}
+          />
+          {errors.confirm && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.confirm.message}
+            </p>
+          )}
+        </div>
+
+        {reset.isError && (
+          <p className="text-xs text-red-600">{genericError}</p>
+        )}
+
+        <button
+          className="btn-primary w-full"
+          disabled={reset.isPending}
+        >
+          {reset.isPending ? "Updating…" : "Update password"}
+        </button>
+      </form>
+    </main>
+  );
 }

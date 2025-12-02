@@ -1,20 +1,41 @@
 {
   "name": "Maylo",
   "short_name": "Maylo",
+  "description": "Maylo — Find trusted local services quickly and easily.",
+  "lang": "en",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#0b64ff",
+  "orientation": "portrait",
   "background_color": "#ffffff",
+  "theme_color": "#0057ff",
+
   "icons": [
+    { "src": "/icons/maylo-48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "/icons/maylo-72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "/icons/maylo-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/icons/maylo-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/icons/maylo-168.png", "sizes": "168x168", "type": "image/png" },
+    { "src": "/icons/maylo-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/maylo-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/icons/maylo-384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "/icons/maylo-512.png", "sizes": "512x512", "type": "image/png" },
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/maylo-512-maskable.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
+  ],
+
+  "screenshots": [
+    { "src": "/splash/splash-640x1136.png", "sizes": "640x1136", "type": "image/png" },
+    { "src": "/splash/splash-750x1334.png", "sizes": "750x1334", "type": "image/png" },
+    { "src": "/splash/splash-828x1792.png", "sizes": "828x1792", "type": "image/png" },
+    { "src": "/splash/splash-1125x2436.png", "sizes": "1125x2436", "type": "image/png" },
+    { "src": "/splash/splash-1170x2532.png", "sizes": "1170x2532", "type": "image/png" },
+    { "src": "/splash/splash-1284x2778.png", "sizes": "1284x2778", "type": "image/png" },
+    { "src": "/splash/splash-1536x2048.png", "sizes": "1536x2048", "type": "image/png" },
+    { "src": "/splash/splash-2048x2732.png", "sizes": "2048x2732", "type": "image/png" }
   ]
 }

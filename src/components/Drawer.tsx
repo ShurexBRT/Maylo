@@ -1,29 +1,32 @@
 // src/components/Drawer.tsx
-import { Link, useNavigate } from 'react-router-dom'
-import { useUI } from '@/lib/store'
-import { useSession, useProfile, useCanAddBusiness } from '@/lib/authState'
-import { signOutTo } from '@/lib/auth'
+import { Link } from "react-router-dom";
+import { useUI } from "@/lib/store";
+import { useSession, useProfile, useCanAddBusiness } from "@/lib/authState";
+import { signOutTo } from "@/lib/auth";
 
 export default function Drawer() {
-  const navigate = useNavigate()
-  const { drawerOpen, setDrawer } = useUI()
-  const { userId } = useSession()
-  const { profile } = useProfile(userId)
-  const canAddBusiness = useCanAddBusiness(userId, profile?.role)
+  const { drawerOpen, closeDrawer } = useUI();
+  const { userId } = useSession();
+  const { profile } = useProfile(userId);
+  const canAddBusiness = useCanAddBusiness(userId, profile?.role);
 
-  const close = () => setDrawer(false)
+  const handleClose = () => closeDrawer();
 
   return (
     <aside
-      className={`drawer ${drawerOpen ? 'open' : ''} fixed top-0 right-0 h-screen w-72 bg-white shadow-2xl z-[1000] transition-transform`}
+      className={`fixed top-0 right-0 z-[1000] h-screen w-72 bg-white shadow-2xl transform transition-transform duration-300 ${
+        drawerOpen ? "translate-x-0" : "translate-x-full"
+      }`}
       aria-hidden={!drawerOpen}
+      role="dialog"
+      aria-modal="true"
     >
-      <div className="p-4 border-b flex items-center justify-between">
+      <div className="flex items-center justify-between border-b px-4 py-3">
         <span className="text-xl font-semibold">Maylo</span>
         <button
           className="text-gray-500 hover:text-gray-700"
-          onClick={close}
-          aria-label="Close"
+          onClick={handleClose}
+          aria-label="Close menu"
         >
           ×
         </button>
@@ -32,14 +35,22 @@ export default function Drawer() {
       <nav className="p-2">
         <ul className="space-y-1">
           <li>
-            <Link to="/saved" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+            <Link
+              to="/saved"
+              onClick={handleClose}
+              className="block rounded-md px-4 py-3 hover:bg-gray-50"
+            >
               Saved
             </Link>
           </li>
 
           {userId && (
             <li>
-              <Link to="/account" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+              <Link
+                to="/account"
+                onClick={handleClose}
+                className="block rounded-md px-4 py-3 hover:bg-gray-50"
+              >
                 My Account
               </Link>
             </li>
@@ -47,21 +58,33 @@ export default function Drawer() {
 
           {userId && (
             <li>
-              <Link to="/settings" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+              <Link
+                to="/settings"
+                onClick={handleClose}
+                className="block rounded-md px-4 py-3 hover:bg-gray-50"
+              >
                 Settings
               </Link>
             </li>
           )}
 
           {/* Provider UX */}
-          {userId && (profile?.role === 'provider' || profile?.role === 'admin') && (
+          {userId && (profile?.role === "provider" || profile?.role === "admin") && (
             <li>
               {canAddBusiness ? (
-                <Link to="/provider/onboard" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                <Link
+                  to="/provider/onboard"
+                  onClick={handleClose}
+                  className="block rounded-md px-4 py-3 hover:bg-gray-50"
+                >
                   Add your business
                 </Link>
               ) : (
-                <Link to="/provider/edit" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                <Link
+                  to="/provider/edit"
+                  onClick={handleClose}
+                  className="block rounded-md px-4 py-3 hover:bg-gray-50"
+                >
                   Edit your business
                 </Link>
               )}
@@ -72,12 +95,20 @@ export default function Drawer() {
           {!userId ? (
             <>
               <li>
-                <Link to="/login" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                <Link
+                  to="/login"
+                  onClick={handleClose}
+                  className="block rounded-md px-4 py-3 hover:bg-gray-50"
+                >
                   Login
                 </Link>
               </li>
               <li>
-                <Link to="/signup" onClick={close} className="block px-4 py-3 hover:bg-gray-50 rounded-md">
+                <Link
+                  to="/signup"
+                  onClick={handleClose}
+                  className="block rounded-md px-4 py-3 hover:bg-gray-50"
+                >
                   Sign up
                 </Link>
               </li>
@@ -86,10 +117,10 @@ export default function Drawer() {
             <li>
               <button
                 onClick={async () => {
-                  close()
-                  await signOutTo('/welcome')
+                  handleClose();
+                  await signOutTo("/welcome");
                 }}
-                className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-md text-red-600"
+                className="w-full rounded-md px-4 py-3 text-left text-red-600 hover:bg-gray-50"
               >
                 Logout
               </button>
@@ -98,5 +129,5 @@ export default function Drawer() {
         </ul>
       </nav>
     </aside>
-  )
+  );
 }

@@ -1,67 +1,137 @@
-import { supabase } from '@/lib/supabase'
+// src/features/auth/api.ts
+import { supabase } from "@/lib/supabase";
 
 export type SignupInput = {
-  email: string
-  password: string
-  full_name?: string
-  role?: 'user' | 'provider'
-}
+  email: string;
+  password: string;
+  full_name?: string;
+  role?: "user" | "provider";
+};
 
 export async function signupEmail(input: SignupInput) {
+  const email = input.email.trim();
+
   const { data, error } = await supabase.auth.signUp({
-    email: input.email,
+    email,
     password: input.password,
     options: {
-      data: { full_name: input.full_name ?? '' }, // upiše se u raw_user_meta_data
+      data: {
+        full_name: input.full_name ?? "",
+        // čuvamo i rolu u user_metadata ako postoji
+        ...(input.role ? { role: input.role } : {}),
+      },
       emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
-  })
-  if (error) throw error
+  });
 
-  // nakon potvrde mejla, naš trigger handle_new_user pravi profil (role default 'user')
-  if (input.role && data.user) {
-    // ako je odmah ulogovan (npr. local dev sa auto confirm), postavi rolu
-    await supabase.from('profiles').update({ role: input.role }).eq('id', data.user.id)
+  if (error) {
+    console.error("[signupEmail] signUp error:", error.message);
+    throw error;
   }
 
-  return data
+  // nakon potvrde mejla, DB trigger handle_new_user pravi profil (role default 'user')
+  // ako je env takav da je user odmah ulogovan (local dev / auto-confirm),
+  // možemo ručno da ispeglamo rolu u profiles.
+  if (input.role && data.user) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ role: input.role })
+      .eq("id", data.user.id);
+
+    if (profileError) {
+      console.error(
+        "[signupEmail] update profile role error:",
+        profileError.message
+      );
+      // ne bacamo dalje – signup je uspeo, samo role update nije
+    }
+  }
+
+  return data;
 }
 
 export async function loginEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) throw error
-  return data
+  const normalizedEmail = email.trim();
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: normalizedEmail,
+    password,
+  });
+
+  if (error) {
+    console.error("[loginEmail] error:", error.message);
+    throw error;
+  }
+
+  return data;
 }
 
-export async function loginOAuth(provider: 'google' | 'apple' | 'facebook') {
+export async function loginOAuth(
+  provider: "google" | "apple" | "facebook"
+) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `${window.location.origin}/auth/callback` },
-  })
-  if (error) throw error
-  return data // redirect se dešava odmah
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    console.error("[loginOAuth] error:", error.message);
+    throw error;
+  }
+
+  // redirect se dešava odmah, ali vraćamo data radi potpisanog tipa
+  return data;
 }
 
 export async function logout() {
-  const { error } = await supabase.auth.signOut()
-  if (error) throw error
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("[logout] error:", error.message);
+    throw error;
+  }
 }
 
 export async function sendPasswordReset(email: string) {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  })
-  if (error) throw error
-  return data
+  const normalizedEmail = email.trim();
+
+  const { data, error } = await supabase.auth.resetPasswordForEmail(
+    normalizedEmail,
+    {
+      redirectTo: `${window.location.origin}/reset-password`,
+    }
+  );
+
+  if (error) {
+    console.error("[sendPasswordReset] error:", error.message);
+    throw error;
+  }
+
+  return data;
 }
 
 export async function updatePassword(newPassword: string) {
-  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
-  if (error) throw error
-  return data
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    console.error("[updatePassword] error:", error.message);
+    throw error;
+  }
+
+  return data;
 }
 
 export async function getCurrentUser() {
-  const { data } = await supabase.auth.getUser()
-  return data.user ?? null
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error("[getCurrentUser] error:", error.message);
+    return null;
+  }
+
+  return data.user ?? null;
 }

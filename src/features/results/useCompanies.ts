@@ -1,28 +1,38 @@
+// src/features/results/useCompanies.ts
 import {
   useInfiniteQuery,
   type InfiniteData,
-} from '@tanstack/react-query'
+} from "@tanstack/react-query";
+
 import {
   fetchCompanies,
   type CompaniesFilters,
   type CompaniesPage,
-} from './api'
+} from "./api";
 
 export function useCompanies(
-  filters: Omit<CompaniesFilters, 'page' | 'pageSize'>
+  filters: Omit<CompaniesFilters, "page" | "pageSize">
 ) {
   return useInfiniteQuery<
-    CompaniesPage,                 // TQueryFnData
-    Error,                         // TError
-    InfiniteData<CompaniesPage>,   // TData (returned shape)
-    [string, typeof filters],      // TQueryKey
-    number                         // TPageParam
+    CompaniesPage,
+    Error,
+    InfiniteData<CompaniesPage>,
+    [string, typeof filters],
+    number
   >({
-    queryKey: ['companies', filters],
+    queryKey: ["companies", filters],
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
-      fetchCompanies({ ...filters, page: pageParam, pageSize: 20 }),
+      fetchCompanies({
+        ...filters,
+        page: pageParam,
+        pageSize: 20,
+      }),
     getNextPageParam: (lastPage) =>
       lastPage.nextPage ?? undefined,
-  })
+
+    staleTime: 60_000,
+refetchOnWindowFocus: false,
+
+  });
 }

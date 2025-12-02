@@ -1,37 +1,82 @@
-import Header from '@/components/Header'
-import Drawer from '@/components/Drawer'
-import { useUI } from '@/lib/store'
-import { useForm } from 'react-hook-form'
-import { useForgotPassword } from './hooks'
-import '@/styles/globals.css'
+// src/features/auth/ForgotPasswordPage.tsx
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
+import { useForgotPassword } from "./hooks";
+
+type Form = { email: string };
 
 export default function ForgotPasswordPage() {
-  const { drawerOpen, setDrawer } = useUI()
-  const { register, handleSubmit } = useForm<{ email: string }>()
-  const forgot = useForgotPassword()
+  const forgot = useForgotPassword();
+  const [sent, setSent] = useState(false);
 
-  const onSubmit = async (v: { email: string }) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Form>({
+    defaultValues: { email: "" },
+  });
+
+  const onSubmit = async (v: Form) => {
+    setSent(false);
     try {
-      await forgot.mutateAsync(v.email)
-      alert('Check your email for the reset link.')
+      await forgot.mutateAsync(v.email.trim());
+      setSent(true);
     } catch {
-      alert('Could not send email.')
+      // greška će biti u forgot.error, prikazaćemo je ispod
     }
-  }
+  };
+
+  const genericError = (forgot.error as Error | null)?.message
+    ? (forgot.error as Error).message
+    : "Could not send reset email. Please try again.";
 
   return (
-    <div onClick={() => drawerOpen && setDrawer(false)}>
-      
-      <main className="max-w-sm mx-auto p-4">
-        <h1 className="text-xl font-semibold mb-4">Forgot password</h1>
-        <form className="card p-4 space-y-3" onSubmit={handleSubmit(onSubmit)} onClick={(e)=>e.stopPropagation()}>
-          <input {...register('email')} type="email" placeholder="Your email" className="w-full border p-3 rounded-lg"/>
-          <button className="btn-primary w-full" disabled={forgot.isPending}>
-            {forgot.isPending ? 'Sending…' : 'Send reset link'}
-          </button>
-        </form>
-      </main>
-    </div>
-  )
+    <main className="mx-auto max-w-sm p-4">
+      <h1 className="mb-4 text-xl font-semibold">Forgot password</h1>
+
+      <form
+        className="card space-y-3 p-4"
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <div>
+          <input
+            type="email"
+            placeholder="Your email"
+            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            {...register("email", {
+              required: "Email is required",
+              pattern: {
+                value: /\S+@\S+\.\S+/,
+                message: "Enter a valid email",
+              },
+            })}
+          />
+          {errors.email && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
+
+        {forgot.isError && !sent && (
+          <p className="text-xs text-red-600">{genericError}</p>
+        )}
+
+        {sent && !forgot.isError && (
+          <p className="text-xs text-green-700">
+            Check your email for the reset link.
+          </p>
+        )}
+
+        <button
+          className="btn-primary w-full"
+          disabled={forgot.isPending}
+        >
+          {forgot.isPending ? "Sending…" : "Send reset link"}
+        </button>
+      </form>
+    </main>
+  );
 }

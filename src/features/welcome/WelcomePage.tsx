@@ -1,20 +1,32 @@
-import { Link, useNavigate } from 'react-router-dom'
-import welcomeImg from '@/assets/illustrations/welcome.png' // <-- import asseta
-import { markGuestSession } from '@/app/StartupGate'
-import { clearGuestSession } from '@/app/StartupGate'
+// src/features/welcome/WelcomePage.tsx
+
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import welcomeImg from "@/assets/illustrations/welcome.png";
+
+import { enableGuest, disableGuest, isGuest } from "@/lib/guest";
+import { supabase } from "@/lib/supabase";
 
 export default function WelcomePage() {
-  const nav = useNavigate()
+  const nav = useNavigate();
+
+  // Ako je user logoutovan i došao na Welcome → očistimo guest flag
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+
+      // Ako nema sesije → očisti stari guest flag
+      if (!data?.user) {
+        disableGuest();
+      }
+      // Ako ima sesiju — ne diramo nista
+    })();
+  }, []);
 
   const onGuest = () => {
-    // evidentiramo “guest” pa pustamo korisnika u app
-    markGuestSession()
-    nav('/', { replace: true })
-  }
-
-  // ako se iz nekog razloga došlo na welcome nakon logout-a,
-  // obriši potencijalne stare flagove
-  clearGuestSession()
+    enableGuest();
+    nav("/", { replace: true });
+  };
 
   return (
     <main className="max-w-md mx-auto px-4 py-10 text-center">
@@ -31,10 +43,18 @@ export default function WelcomePage() {
       </p>
 
       <div className="flex flex-col gap-3">
-        <Link to="/login" className="btn-primary">Log in</Link>
-        <Link to="/signup" className="btn-secondary">Sign up</Link>
-        <button onClick={onGuest} className="btn-ghost">Continue as guest</button>
+        <Link to="/login" className="btn-primary">
+          Log in
+        </Link>
+
+        <Link to="/signup" className="btn-secondary">
+          Sign up
+        </Link>
+
+        <button onClick={onGuest} className="btn-ghost">
+          Continue as guest
+        </button>
       </div>
     </main>
-  )
+  );
 }
