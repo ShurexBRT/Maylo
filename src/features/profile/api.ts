@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import type { Company } from '@/features/results/api'
 
+export type { Company } from '@/features/results/api'
+
+
 export type CompanyWithStats = Company & {
   // proširi po potrebi (npr. images, description…)
 }

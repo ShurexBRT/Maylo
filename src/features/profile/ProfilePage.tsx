@@ -139,7 +139,7 @@ export default function ProfilePage() {
             {Array.isArray(q.data.languages) &&
               q.data.languages.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {q.data.languages.map((l) => (
+                  {q.data.languages.map((l: string) => (
                     <span key={l} className="pill">
                       {l}
                     </span>

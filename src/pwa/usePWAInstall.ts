@@ -1,87 +1,74 @@
-// src/pwa/PWAInstallBanner.tsx
-import { useEffect, useState } from "react";
-import { usePWAInstall } from "@/pwa/usePWAInstall";
+// src/pwa/usePWAInstall.ts
+import { useEffect, useState } from 'react'
 
-const DISMISS_KEY = "maylo_pwa_install_dismissed";
+type BIPEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed'
+    platform: string
+  }>
+}
 
-function getInitialDismissed(): boolean {
-  if (typeof window === "undefined") return false;
+const INSTALLED_KEY = 'maylo_pwa_installed'
+
+function getInitialInstalled(): boolean {
+  if (typeof window === 'undefined') return false
   try {
-    return localStorage.getItem(DISMISS_KEY) === "1";
+    return localStorage.getItem(INSTALLED_KEY) === '1'
   } catch {
-    return false;
+    return false
   }
 }
 
-export default function PWAInstallBanner() {
-  const { canInstall, promptInstall, installed, supported } = usePWAInstall();
-  const [hidden, setHidden] = useState<boolean>(getInitialDismissed);
-  const [isIOS, setIsIOS] = useState(false);
+export function usePWAInstall() {
+  const [deferred, setDeferred] = useState<BIPEvent | null>(null)
+  const [installed, setInstalled] = useState<boolean>(getInitialInstalled)
+  const [supported, setSupported] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return 'onbeforeinstallprompt' in window
+  })
 
-  // detekcija iOS-a – samo u browseru
   useEffect(() => {
-    if (typeof navigator === "undefined") return;
-    const ua = navigator.userAgent || "";
-    setIsIOS(/iphone|ipad|ipod/i.test(ua));
-  }, []);
+    if (typeof window === 'undefined') return
 
-  // sakrij ako je app instalirana
-  useEffect(() => {
-    if (installed) {
-      setHidden(true);
+    const onBIP = (e: Event) => {
+      e.preventDefault()
+      setDeferred(e as BIPEvent)
+      setSupported(true)
+    }
+
+    const onInstalled = () => {
+      setInstalled(true)
       try {
-        localStorage.setItem(DISMISS_KEY, "1");
+        localStorage.setItem(INSTALLED_KEY, '1')
       } catch {
         // ignore
       }
     }
-  }, [installed]);
 
-  // kad user ručno zatvori banner (✕) – zapamti
-  const onClose = () => {
-    setHidden(true);
-    try {
-      localStorage.setItem(DISMISS_KEY, "1");
-    } catch {
-      // ignore
+    window.addEventListener('beforeinstallprompt', onBIP)
+    window.addEventListener('appinstalled', onInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBIP)
+      window.removeEventListener('appinstalled', onInstalled)
     }
-  };
+  }, [])
 
-  // uslovi da se uopšte prikaže:
-  // - nije ručno/automatski sakriven
-  // - nije iOS (nema beforeinstallprompt)
-  // - browser podržava PWA prompt
-  // - ima deferovan event (canInstall)
-  if (hidden || isIOS || !supported || !canInstall) return null;
+  async function promptInstall() {
+    if (!deferred) return
+    try {
+      await deferred.prompt()
+      await deferred.userChoice
+    } finally {
+      setDeferred(null)
+    }
+  }
 
-  return (
-    <div className="fixed bottom-4 left-1/2 z-[60] -translate-x-1/2">
-      <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-lg">
-        <img
-          src="/icons/icon-192.png"
-          alt="Maylo"
-          className="h-8 w-8"
-        />
-        <div className="text-sm">
-          <div className="font-semibold">Install Maylo</div>
-          <div className="text-gray-600">
-            Get quick access from your home screen.
-          </div>
-        </div>
-        <button
-          onClick={promptInstall}
-          className="btn-primary ml-3 rounded-xl px-3 py-2"
-        >
-          Install
-        </button>
-        <button
-          onClick={onClose}
-          className="ml-1 text-gray-500 hover:text-gray-700"
-          aria-label="Close"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
+  return {
+    canInstall: Boolean(deferred) && !installed,
+    promptInstall,
+    installed,
+    supported,
+  }
 }

@@ -11,8 +11,8 @@ export default function SettingsPage() {
 
   // auth info
   const { data: authUser, isLoading: authLoading } = useAuthUser();
-  const { userId, isLoading: sessionLoading } = useSession();
-  const { profile, isLoading: profileLoading } = useProfile(userId);
+  const { userId, loading: sessionLoading } = useSession();
+  const { profile, loading: profileLoading } = useProfile(userId);
   const canAddBusiness = useCanAddBusiness(userId, profile?.role);
 
   const logout = useLogout();

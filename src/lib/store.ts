@@ -10,11 +10,9 @@ type UIState = {
 
 export const useUI = create<UIState>((set) => ({
   drawerOpen: false,
-
-  setDrawer: (open) => set({ drawerOpen: open }),
-
+  setDrawer: (open: boolean) => set({ drawerOpen: open }),
   toggleDrawer: () =>
-    set((state) => ({
+    set((state: UIState) => ({
       drawerOpen: !state.drawerOpen,
     })),
 

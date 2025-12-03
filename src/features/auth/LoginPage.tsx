@@ -35,11 +35,12 @@ export default function LoginPage() {
   const social = (p: "google" | "apple" | "facebook") => () =>
     oauth.mutate(p);
 
-  const genericError =
-    (login.error as Error | null)?.message &&
-    !login.error.message.includes("Not authenticated")
-      ? login.error.message
-      : "Login failed. Check your credentials and try again.";
+  const raw = login.error?.message ?? ''
+const msg =
+  raw && !raw.includes('Not authenticated')
+    ? raw
+    : 'Login failed. Check your credentials.'
+  const genericError = msg;
 
   return (
     <main className="mx-auto max-w-sm p-4">
