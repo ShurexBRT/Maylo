@@ -22,7 +22,7 @@ export default function Header() {
           aria-label="Open navigation menu"
           className="btn-icon inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm"
           onClick={(e) => {
-            e.stopPropagation();      // 🔥 sprečava da Layout odmah zatvori drawer
+            e.stopPropagation(); // <— DA NE ZATVARA ODMAH DRAWER
             toggleDrawer();
           }}
         >

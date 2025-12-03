@@ -9,10 +9,11 @@ import { useUI } from "@/lib/store";
 
 export default function Layout() {
   const { drawerOpen, setDrawer } = useUI();
-   const closeIfOpen = () => {
-    if (drawerOpen) setDrawer(false)
-  };
   const location = useLocation();
+
+  const closeIfOpen = () => {
+    if (drawerOpen) setDrawer(false);
+  };
 
   // On route change → close drawer if open
   useEffect(() => {
@@ -21,12 +22,6 @@ export default function Layout() {
     }
   }, [location.pathname, drawerOpen, setDrawer]);
 
-  const handleMainClick = () => {
-    if (drawerOpen) {
-      setDrawer(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-50" onClick={closeIfOpen}>
       <Header />
@@ -34,7 +29,7 @@ export default function Layout() {
 
       <main
         className="max-w-5xl mx-auto px-4 py-4"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()} // da normalni klikovi ne pale closeIfOpen
       >
         <Outlet />
         <PWAInstallBanner />
