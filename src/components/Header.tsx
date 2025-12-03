@@ -12,11 +12,7 @@ export default function Header() {
       <div className="header-inner flex items-center justify-between px-4 py-3">
         {/* left: logo + brand */}
         <Link to="/" className="flex items-center gap-2">
-          <img
-            src={mayloLogo}
-            alt="Maylo"
-            className="h-8 w-8 rounded-xl"
-          />
+          <img src={mayloLogo} alt="Maylo" className="h-8 w-8 rounded-xl" />
           <span className="text-lg font-semibold tracking-tight">Maylo</span>
         </Link>
 
@@ -25,7 +21,10 @@ export default function Header() {
           type="button"
           aria-label="Open navigation menu"
           className="btn-icon inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm"
-          onClick={toggleDrawer}
+          onClick={(e) => {
+            e.stopPropagation();      // 🔥 sprečava da Layout odmah zatvori drawer
+            toggleDrawer();
+          }}
         >
           <Menu className="h-6 w-6 text-slate-800" />
         </button>
