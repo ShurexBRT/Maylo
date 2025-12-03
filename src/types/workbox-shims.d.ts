@@ -1,13 +1,18 @@
 // src/types/workbox-shims.d.ts
 
-// Workbox expects ServiceWorker types to exist.
-// We define minimal interfaces so TS stops crying.
+export {}
 
-interface ExtendableEvent extends Event {
-  waitUntil(fn: Promise<any>): void;
-}
+declare global {
+  // Workbox service worker eventi – minimum što nam treba da Typescript ućuti
+  interface ExtendableEvent extends Event {
+    waitUntil(fn: Promise<unknown> | Array<Promise<unknown>>): void
+  }
 
-interface FetchEvent extends ExtendableEvent {
-  request: Request;
-  respondWith(response: Promise<Response> | Response): void;
+  interface FetchEvent extends ExtendableEvent {
+    request: Request
+    respondWith(response: Response | Promise<Response>): void
+  }
+
+  // Šim za @unconfig / vite-plugin-pwa generic Args[0] – nebitno nam je šta je tačno
+  type Args = any[]
 }
