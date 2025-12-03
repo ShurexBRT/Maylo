@@ -9,6 +9,9 @@ import { useUI } from "@/lib/store";
 
 export default function Layout() {
   const { drawerOpen, setDrawer } = useUI();
+   const closeIfOpen = () => {
+    if (drawerOpen) setDrawer(false)
+  };
   const location = useLocation();
 
   // On route change → close drawer if open
@@ -25,11 +28,14 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="min-h-screen bg-slate-50" onClick={closeIfOpen}>
       <Header />
       <Drawer />
 
-      <main className="flex-1" onClick={handleMainClick}>
+      <main
+        className="max-w-5xl mx-auto px-4 py-4"
+        onClick={e => e.stopPropagation()}
+      >
         <Outlet />
         <PWAInstallBanner />
       </main>

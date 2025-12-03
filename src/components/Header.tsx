@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useUI } from "@/lib/store";
-import mayloLogo from "@/assets/maylo/maylo-logo.png";
+import mayloLogo from "@/assets/maylo-logo.png";
 
 export default function Header() {
   const { toggleDrawer } = useUI();

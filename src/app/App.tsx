@@ -53,7 +53,7 @@ export default function App() {
             <Route path="/saved" element={<SavedPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/reviews/write/:id" element={<WriteReviewPage />} />
+             <Route path="/write-review/:id" element={<WriteReviewPage />} />
 
             {/* Provider rute */}
             <Route path="/providers/onboard" element={<OnboardPage />} />
