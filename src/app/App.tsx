@@ -56,9 +56,9 @@ export default function App() {
              <Route path="/write-review/:id" element={<WriteReviewPage />} />
 
             {/* Provider rute */}
-            <Route path="/providers/onboard" element={<OnboardPage />} />
-            <Route path="/providers/edit" element={<EditBusinessPage />} />
-            <Route path="/providers/edit/:id" element={<EditBusinessPage />} />
+            <Route path="/provider/onboard" element={<OnboardPage />} />
+            <Route path="/provider/edit" element={<EditBusinessPage />} />
+            <Route path="/provider/edit/:id" element={<EditBusinessPage />} />
 
             {/* FAQ i ostalo */}
             <Route path="/faq" element={<FAQPage />} />
