@@ -1,13 +1,19 @@
 // src/features/auth/api.ts
 import { supabase } from "@/lib/supabase";
 
+/* -------------------------------
+   TYPES
+-------------------------------- */
 export type SignupInput = {
   email: string;
   password: string;
   full_name?: string;
-  role?: "user" | "provider";
+  role?: "user" | "provider"; // upisujemo u user_metadata (trigger čita)
 };
 
+/* -------------------------------
+   SIGN UP – password + metadata
+-------------------------------- */
 export async function signupEmail(input: SignupInput) {
   const email = input.email.trim();
 
@@ -17,8 +23,7 @@ export async function signupEmail(input: SignupInput) {
     options: {
       data: {
         full_name: input.full_name ?? "",
-        // čuvamo i rolu u user_metadata ako postoji
-        ...(input.role ? { role: input.role } : {}),
+        role: input.role ?? "user",   // samo metadata — trigger kasnije kreira profil
       },
       emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
@@ -29,27 +34,14 @@ export async function signupEmail(input: SignupInput) {
     throw error;
   }
 
-  // nakon potvrde mejla, DB trigger handle_new_user pravi profil (role default 'user')
-  // ako je env takav da je user odmah ulogovan (local dev / auto-confirm),
-  // možemo ručno da ispeglamo rolu u profiles.
-  if (input.role && data.user) {
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ role: input.role })
-      .eq("id", data.user.id);
-
-    if (profileError) {
-      console.error(
-        "[signupEmail] update profile role error:",
-        profileError.message
-      );
-      // ne bacamo dalje – signup je uspeo, samo role update nije
-    }
-  }
+  // 🚫 Ne diramo profiles! Trigger to radi 100% server-side.
 
   return data;
 }
 
+/* -------------------------------
+   LOGIN (email + password)
+-------------------------------- */
 export async function loginEmail(email: string, password: string) {
   const normalizedEmail = email.trim();
 
@@ -66,6 +58,9 @@ export async function loginEmail(email: string, password: string) {
   return data;
 }
 
+/* -------------------------------
+   SOCIAL LOGIN (Google / Apple / Facebook)
+-------------------------------- */
 export async function loginOAuth(
   provider: "google" | "apple" | "facebook"
 ) {
@@ -81,10 +76,12 @@ export async function loginOAuth(
     throw error;
   }
 
-  // redirect se dešava odmah, ali vraćamo data radi potpisanog tipa
-  return data;
+  return data; // redirect se svakako desi
 }
 
+/* -------------------------------
+   LOGOUT
+-------------------------------- */
 export async function logout() {
   const { error } = await supabase.auth.signOut();
 
@@ -94,6 +91,9 @@ export async function logout() {
   }
 }
 
+/* -------------------------------
+   PASSWORD RESET – request email
+-------------------------------- */
 export async function sendPasswordReset(email: string) {
   const normalizedEmail = email.trim();
 
@@ -112,6 +112,9 @@ export async function sendPasswordReset(email: string) {
   return data;
 }
 
+/* -------------------------------
+   PASSWORD UPDATE – after redirect
+-------------------------------- */
 export async function updatePassword(newPassword: string) {
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
@@ -125,6 +128,9 @@ export async function updatePassword(newPassword: string) {
   return data;
 }
 
+/* -------------------------------
+   CURRENT USER (client-side check)
+-------------------------------- */
 export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
 
