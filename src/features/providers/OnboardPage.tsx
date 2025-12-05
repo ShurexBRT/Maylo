@@ -1,134 +1,151 @@
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
-// --- helpers / konstante ---
+type Step = 1 | 2 | 3 | 4;
 
-type WizardStep = 1 | 2 | 3 | 4;
-
-type BusinessForm = {
+type BasicInfo = {
   name: string;
   category: string;
+};
+
+type LocationInfo = {
   country: string;
   city: string;
   address: string;
+};
+
+type ContactInfo = {
   email: string;
   phone: string;
-  languages: string[]; // codes iz LANG_OPTIONS
+  languages: string[];
 };
 
-const INITIAL_FORM: BusinessForm = {
-  name: "",
-  category: "",
-  country: "",
-  city: "",
-  address: "",
-  email: "",
-  phone: "",
-  languages: [],
-};
-
-const BUSINESS_CATEGORIES = [
+const CATEGORIES = [
   "Advokat",
-  "Doktor - opšta praksa",
-  "Doktor - pedijatar",
+  "Doktor opšte prakse",
+  "Pedijatar",
   "Veterinar",
   "Knjigovođa",
   "Frizer",
   "Restoran",
   "Kafić",
-  "Prevodilac",
-  "Auto-mehaničar",
+  "Auto servis",
+  "Stolar",
   "Električar",
   "Vodoinstalater",
-  "Stolar",
-];
+  "Prevodilac",
+  "IT usluge",
+] as const;
 
-const COUNTRIES = ["Germany", "Serbia"] as const;
-
-const CITIES_BY_COUNTRY: Record<string, string[]> = {
-  Germany: ["Berlin", "Hamburg", "Munich", "Frankfurt", "Stuttgart"],
-  Serbia: ["Beograd", "Novi Sad", "Niš", "Kragujevac"],
+type CountryOption = {
+  code: string;
+  name: string;
+  cities: string[];
 };
 
-const LANG_OPTIONS = [
-  { code: "sr", label: "SR", flag: "🇷🇸" },
-  { code: "hr", label: "HR", flag: "🇭🇷" },
-  { code: "bs", label: "BA", flag: "🇧🇦" },
-  { code: "mk", label: "MK", flag: "🇲🇰" },
-  { code: "de", label: "DE", flag: "🇩🇪" },
-  { code: "en", label: "EN", flag: "🇬🇧" },
-  { code: "ru", label: "RU", flag: "🇷🇺" },
-  { code: "uk", label: "UA", flag: "🇺🇦" },
-  { code: "tr", label: "TR", flag: "🇹🇷" },
-  { code: "ar", label: "AR", flag: "🇸🇦" },
+const COUNTRIES: CountryOption[] = [
+  {
+    code: "DE",
+    name: "Germany",
+    cities: ["Berlin", "Hamburg", "Munich", "Frankfurt", "Cologne"],
+  },
+  {
+    code: "AT",
+    name: "Austria",
+    cities: ["Vienna", "Graz", "Linz", "Salzburg"],
+  },
+  {
+    code: "CH",
+    name: "Switzerland",
+    cities: ["Zurich", "Geneva", "Basel", "Bern"],
+  },
+  {
+    code: "RS",
+    name: "Serbia",
+    cities: ["Belgrade", "Novi Sad", "Niš", "Kragujevac"],
+  },
+];
+
+type LanguageOption = {
+  code: string;
+  short: string;
+  label: string;
+  flag: string;
+};
+
+const LANGUAGES: LanguageOption[] = [
+  { code: "sr", short: "SR", label: "Serbian", flag: "🇷🇸" },
+  { code: "hr", short: "HR", label: "Croatian", flag: "🇭🇷" },
+  { code: "bs", short: "BS", label: "Bosnian", flag: "🇧🇦" },
+  { code: "mk", short: "MK", label: "Macedonian", flag: "🇲🇰" },
+  { code: "sl", short: "SL", label: "Slovenian", flag: "🇸🇮" },
+  { code: "en", short: "EN", label: "English", flag: "🇬🇧" },
+  { code: "de", short: "DE", label: "German", flag: "🇩🇪" },
+  { code: "ru", short: "RU", label: "Russian", flag: "🇷🇺" },
+  { code: "uk", short: "UA", label: "Ukrainian", flag: "🇺🇦" },
+  { code: "tr", short: "TR", label: "Turkish", flag: "🇹🇷" },
+  { code: "ar", short: "AR", label: "Arabic", flag: "🇸🇦" },
 ];
 
 export default function OnboardPage() {
-  const nav = useNavigate();
-  const [step, setStep] = useState<WizardStep>(1);
-  const [form, setForm] = useState<BusinessForm>(INITIAL_FORM);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const [step, setStep] = useState<Step>(1);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Ako provider već ima firmu -> šaljemo ga na edit
-  useEffect(() => {
-    let cancelled = false;
+  const [basic, setBasic] = useState<BasicInfo>({
+    name: "",
+    category: "",
+  });
 
-    async function checkExistingCompany() {
-      setLoading(true);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+  const [location, setLocation] = useState<LocationInfo>({
+    country: "",
+    city: "",
+    address: "",
+  });
 
-      if (userError || !user) {
-        setLoading(false);
-        nav("/login", { replace: true });
-        return;
-      }
+  const [contact, setContact] = useState<ContactInfo>({
+    email: "",
+    phone: "",
+    languages: [],
+  });
 
-      const { data: company, error: companyError } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("owner_user_id", user.id)
-        .maybeSingle();
+  const selectedCountry = useMemo(
+    () => COUNTRIES.find((c) => c.name === location.country),
+    [location.country]
+  );
 
-      if (cancelled) return;
-
-      if (companyError) {
-        console.error("[OnboardPage] fetch company error:", companyError.message);
-      }
-
-      if (company) {
-        // već postoji – šaljemo na edit
-        nav("/provider/edit", { replace: true });
-        return;
-      }
-
-      setLoading(false);
+  // -------------------------------
+  // Helpers
+  // -------------------------------
+  function canGoNext(current: Step): boolean {
+    if (current === 1) {
+      return basic.name.trim().length > 1 && basic.category.trim().length > 0;
     }
+    if (current === 2) {
+      return (
+        location.country.trim().length > 0 && location.city.trim().length > 0
+      );
+    }
+    if (current === 3) {
+      return contact.email.trim().length > 3; // phone/lang optional za sad
+    }
+    return true;
+  }
 
-    checkExistingCompany();
+  function goNext() {
+    if (!canGoNext(step)) return;
+    setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
+  }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [nav]);
-
-  function handleChange<K extends keyof BusinessForm>(
-    key: K,
-    value: BusinessForm[K]
-  ) {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  function goBack() {
+    setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
   }
 
   function toggleLanguage(code: string) {
-    setForm((prev) => {
+    setContact((prev) => {
       const exists = prev.languages.includes(code);
       return {
         ...prev,
@@ -139,389 +156,439 @@ export default function OnboardPage() {
     });
   }
 
-  function validateStep(s: WizardStep): string | null {
-    if (s === 1) {
-      if (!form.name.trim()) return "Business name is required.";
-      if (!form.category) return "Please choose a category.";
-    }
-    if (s === 2) {
-      if (!form.country) return "Country is required.";
-      if (!form.city) return "City is required.";
-    }
-    if (s === 3) {
-      if (form.languages.length === 0)
-        return "Please select at least one language.";
-    }
-    return null;
-  }
-
-  async function handleNext() {
-    const msg = validateStep(step);
-    if (msg) {
-      setError(msg);
-      return;
-    }
-    setError(null);
-    setStep((prev) => (prev < 4 ? ((prev + 1) as WizardStep) : prev));
-  }
-
-  function handleBack() {
-    setError(null);
-    setStep((prev) => (prev > 1 ? ((prev - 1) as WizardStep) : prev));
-  }
-
   async function handleSubmit() {
-    const msg = validateStep(3); // finalna validacija za obavezna polja
-    if (msg) {
-      setError(msg);
+    if (!canGoNext(3)) {
       setStep(3);
       return;
     }
 
-    setError(null);
     setSaving(true);
+    setErrorMsg("");
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
 
-    if (userError || !user) {
+      if (userError) throw userError;
+      if (!userData.user) throw new Error("Not authenticated");
+
+      const payload = {
+        name: basic.name.trim(),
+        category: basic.category.trim(),
+        country: location.country.trim(),
+        city: location.city.trim(),
+        address: location.address.trim(),
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+        languages: contact.languages.join(","), // isti format kao u EditBusiness
+        owner_user_id: userData.user.id,
+      };
+
+      const { data, error } = await supabase
+        .from("companies")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      // posle uspešnog upisa vodi ga na profil firme
+      if (data?.id) {
+        navigate(`/profile/${data.id}`);
+      } else {
+        navigate("/account");
+      }
+    } catch (err: any) {
+      console.error("Onboard submit error:", err);
+      setErrorMsg(
+        err?.message || "Something went wrong while saving your business."
+      );
       setSaving(false);
-      setError("You must be logged in to add your business.");
       return;
     }
-
-    const payload = {
-      name: form.name.trim(),
-      category: form.category,
-      country: form.country,
-      city: form.city,
-      address: form.address.trim() || null,
-      email: form.email.trim() || null,
-      phone: form.phone.trim() || null,
-      languages: form.languages.join(","),
-      owner_user_id: user.id,
-    };
-
-    const { error: insertError } = await supabase
-      .from("companies")
-      .insert(payload);
 
     setSaving(false);
-
-    if (insertError) {
-      console.error("[OnboardPage] insert error:", insertError.message);
-      setError("Failed to save your business. Please try again.");
-      return;
-    }
-
-    // success
-    nav("/account", { replace: true });
   }
 
-  if (loading) {
-    return (
-      <main className="app-page flex items-center justify-center">
-        <p className="text-gray-500">Loading…</p>
-      </main>
-    );
-  }
+  // -------------------------------
+  // UI za step tabs
+  // -------------------------------
+  const stepsMeta = [
+    { id: 1, label: "Basic info" },
+    { id: 2, label: "Location" },
+    { id: 3, label: "Contact & languages" },
+    { id: 4, label: "Review & submit" },
+  ] as const;
 
   return (
-    <main className="app-page max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-2">Add your business</h1>
-      <p className="text-gray-600 mb-6">
-        We&apos;ll guide you through a few quick steps to create your profile on
+    <main className="max-w-4xl mx-auto px-4 py-10">
+      <h1 className="text-2xl md:text-3xl font-semibold mb-2">
+        Add your business
+      </h1>
+      <p className="text-gray-600 mb-8">
+        We’ll guide you through a few quick steps to create your profile on
         Maylo.
       </p>
 
-      {/* stepper */}
-      <div className="flex gap-4 mb-6">
-        {["Basic info", "Location", "Contact & languages", "Review & submit"].map(
-          (label, idx) => {
-            const stepNumber = (idx + 1) as WizardStep;
-            const active = stepNumber === step;
-            const done = stepNumber < step;
-            return (
-              <div key={label} className="flex items-center gap-2">
-                <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center text-sm border ${
-                    active
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : done
-                      ? "bg-blue-100 text-blue-700 border-blue-200"
-                      : "bg-white text-gray-600 border-gray-300"
-                  }`}
-                >
-                  {stepNumber}
-                </div>
-                <span
-                  className={
-                    active ? "text-sm font-medium" : "text-sm text-gray-500"
-                  }
-                >
-                  {label}
-                </span>
-              </div>
-            );
-          }
-        )}
+      {/* STEPS NAV */}
+      <div className="flex gap-3 mb-8">
+        {stepsMeta.map((s) => (
+          <div
+            key={s.id}
+            className={`flex items-center gap-2 rounded-full px-3 py-1 text-sm ${
+              step === s.id
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 border border-white/40 text-xs">
+              {s.id}
+            </span>
+            <span className="hidden sm:inline">{s.label}</span>
+          </div>
+        ))}
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-          {error}
+      {errorMsg && (
+        <div className="mb-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700">
+          {errorMsg}
         </div>
       )}
 
-      <section className="rounded-2xl bg-white shadow-sm border border-slate-200 px-6 py-6">
+      {/* STEP CONTENT */}
+      <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-6 md:p-8">
         {step === 1 && (
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Business name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                value={form.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="e.g. Kobasica"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Category / branch <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"
-                value={form.category}
-                onChange={(e) => handleChange("category", e.target.value)}
-              >
-                <option value="">Choose a category…</option>
-                {BUSINESS_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                This is how users will find you in search (e.g. frizer, advokat,
-                lekar…).
-              </p>
-            </div>
-          </div>
+          <StepBasicInfo basic={basic} setBasic={setBasic} />
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium">
-                  Country <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"
-                  value={form.country}
-                  onChange={(e) => {
-                    const country = e.target.value;
-                    handleChange("country", country);
-                    // reset city kad promeni zemlju
-                    handleChange("city", "");
-                  }}
-                >
-                  <option value="">Choose a country…</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"
-                  value={form.city}
-                  onChange={(e) => handleChange("city", e.target.value)}
-                  disabled={!form.country}
-                >
-                  <option value="">
-                    {form.country ? "Choose a city…" : "Select country first"}
-                  </option>
-                  {form.country &&
-                    (CITIES_BY_COUNTRY[form.country] ?? []).map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Address
-              </label>
-              <input
-                type="text"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                value={form.address}
-                onChange={(e) => handleChange("address", e.target.value)}
-                placeholder="Street and number (optional)"
-              />
-            </div>
-          </div>
+          <StepLocation
+            location={location}
+            setLocation={setLocation}
+            selectedCountry={selectedCountry}
+          />
         )}
 
         {step === 3 && (
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium">Email</label>
-                <input
-                  type="email"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  value={form.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="contact@example.com"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Phone</label>
-                <input
-                  type="tel"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  value={form.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="+49 123 456 789"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Languages you speak <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {LANG_OPTIONS.map((lang) => {
-                  const checked = form.languages.includes(lang.code);
-                  return (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => toggleLanguage(lang.code)}
-                      className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-                        checked
-                          ? "border-blue-500 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white text-slate-700"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="text-lg">{lang.flag}</span>
-                        <span>{lang.label}</span>
-                      </span>
-                      <input
-                        type="checkbox"
-                        className="pointer-events-none"
-                        checked={checked}
-                        readOnly
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Users will be able to filter providers by these languages.
-              </p>
-            </div>
-          </div>
+          <StepContactLanguages
+            contact={contact}
+            setContact={setContact}
+            toggleLanguage={toggleLanguage}
+          />
         )}
 
         {step === 4 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-medium mb-2">Review & submit</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Please check your details before publishing your business.
-            </p>
-
-            <div className="space-y-3 text-sm">
-              <div>
-                <div className="font-medium text-gray-700">Basic info</div>
-                <div className="text-gray-600">
-                  {form.name || "—"} · {form.category || "—"}
-                </div>
-              </div>
-              <div>
-                <div className="font-medium text-gray-700">Location</div>
-                <div className="text-gray-600">
-                  {[form.address, form.city, form.country]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                </div>
-              </div>
-              <div>
-                <div className="font-medium text-gray-700">
-                  Contact & languages
-                </div>
-                <div className="text-gray-600">
-                  {form.email && <div>Email: {form.email}</div>}
-                  {form.phone && <div>Phone: {form.phone}</div>}
-                  <div>
-                    Languages:{" "}
-                    {form.languages.length
-                      ? form.languages
-                          .map(
-                            (code) =>
-                              LANG_OPTIONS.find((l) => l.code === code)?.label ??
-                              code
-                          )
-                          .join(", ")
-                      : "—"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <StepReview basic={basic} location={location} contact={contact} />
         )}
-      </section>
 
-      {/* footer actions */}
-      <div className="mt-6 flex items-center justify-between">
-        <button
-          type="button"
-          className="btn-secondary px-5 py-2 rounded-lg border border-slate-300 text-sm"
-          onClick={handleBack}
-          disabled={step === 1 || saving}
-        >
-          Back
-        </button>
-
-        {step < 4 ? (
+        {/* FOOTER BUTTONS */}
+        <div className="mt-8 flex items-center justify-between">
           <button
             type="button"
-            className="btn-primary px-6 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium shadow-sm"
-            onClick={handleNext}
-            disabled={saving}
+            onClick={goBack}
+            disabled={step === 1 || saving}
+            className="rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
           >
-            Next
+            Back
           </button>
-        ) : (
-          <button
-            type="button"
-            className="btn-primary px-6 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium shadow-sm disabled:opacity-60"
-            onClick={handleSubmit}
-            disabled={saving}
-          >
-            {saving ? "Saving…" : "Publish business"}
-          </button>
-        )}
+
+          {step < 4 ? (
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!canGoNext(step) || saving}
+              className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-40"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-40"
+            >
+              {saving ? "Saving…" : "Finish"}
+            </button>
+          )}
+        </div>
+
+        <p className="mt-3 text-xs text-gray-400">
+          Step {step} of 4
+        </p>
       </div>
     </main>
+  );
+}
+
+// ----------------------------------------
+// STEP 1 – BASIC INFO
+// ----------------------------------------
+function StepBasicInfo({
+  basic,
+  setBasic,
+}: {
+  basic: BasicInfo;
+  setBasic: (v: BasicInfo) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Business name <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          value={basic.name}
+          onChange={(e) =>
+            setBasic({ ...basic, name: e.target.value })
+          }
+          placeholder="e.g. Kobasica"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Category / branch <span className="text-red-500">*</span>
+        </label>
+        <select
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
+          value={basic.category}
+          onChange={(e) =>
+            setBasic({ ...basic, category: e.target.value })
+          }
+        >
+          <option value="">Select category…</option>
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          This is how users will find you in search (e.g. frizer, advokat,
+          lekar…).
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------
+// STEP 2 – LOCATION
+// ----------------------------------------
+function StepLocation({
+  location,
+  setLocation,
+  selectedCountry,
+}: {
+  location: LocationInfo;
+  setLocation: (v: LocationInfo) => void;
+  selectedCountry?: CountryOption;
+}) {
+  const cities = selectedCountry?.cities ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Country <span className="text-red-500">*</span>
+          </label>
+          <select
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
+            value={location.country}
+            onChange={(e) =>
+              setLocation({
+                ...location,
+                country: e.target.value,
+                city: "", // reset city
+              })
+            }
+          >
+            <option value="">Select country…</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.name}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            City <span className="text-red-500">*</span>
+          </label>
+          <select
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
+            value={location.city}
+            onChange={(e) =>
+              setLocation({ ...location, city: e.target.value })
+            }
+            disabled={!location.country}
+          >
+            <option value="">
+              {location.country ? "Select city…" : "Choose country first"}
+            </option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Address</label>
+        <input
+          type="text"
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          value={location.address}
+          onChange={(e) =>
+            setLocation({ ...location, address: e.target.value })
+          }
+          placeholder="Street and number (optional)"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------
+// STEP 3 – CONTACT & LANGUAGES
+// ----------------------------------------
+function StepContactLanguages({
+  contact,
+  setContact,
+  toggleLanguage,
+}: {
+  contact: ContactInfo;
+  setContact: (v: ContactInfo) => void;
+  toggleLanguage: (code: string) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Contact email <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            value={contact.email}
+            onChange={(e) =>
+              setContact({ ...contact, email: e.target.value })
+            }
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Phone number
+          </label>
+          <input
+            type="tel"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            value={contact.phone}
+            onChange={(e) =>
+              setContact({ ...contact, phone: e.target.value })
+            }
+            placeholder="+49 123 456 789"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Languages you speak
+        </label>
+        <p className="text-xs text-gray-500 mb-3">
+          Select all languages you can communicate with your clients.
+        </p>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {LANGUAGES.map((lang) => {
+            const active = contact.languages.includes(lang.code);
+            return (
+              <button
+                type="button"
+                key={lang.code}
+                onClick={() => toggleLanguage(lang.code)}
+                className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm transition ${
+                  active
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span>{lang.flag}</span>
+                  <span className="font-medium">{lang.short}</span>
+                </span>
+                <span className="text-[11px] text-gray-500 hidden sm:inline">
+                  {lang.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------
+// STEP 4 – REVIEW & SUBMIT
+// ----------------------------------------
+function StepReview({
+  basic,
+  location,
+  contact,
+}: {
+  basic: BasicInfo;
+  location: LocationInfo;
+  contact: ContactInfo;
+}) {
+  const summary = [
+    { label: "Business name", value: basic.name },
+    { label: "Category", value: basic.category },
+    { label: "Country", value: location.country },
+    { label: "City", value: location.city },
+    { label: "Address", value: location.address || "—" },
+    { label: "Email", value: contact.email },
+    { label: "Phone", value: contact.phone || "—" },
+    {
+      label: "Languages",
+      value:
+        contact.languages.length > 0
+          ? contact.languages.join(", ")
+          : "—",
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600 mb-4">
+        Please review your information before submitting. You’ll be able to edit
+        these details later from your account.
+      </p>
+
+      <div className="divide-y rounded-xl border border-slate-200 bg-slate-50">
+        {summary.map((row) => (
+          <div
+            key={row.label}
+            className="flex items-center justify-between px-4 py-3 text-sm"
+          >
+            <span className="text-gray-500">{row.label}</span>
+            <span className="font-medium text-gray-900 max-w-xs text-right">
+              {row.value || "—"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
