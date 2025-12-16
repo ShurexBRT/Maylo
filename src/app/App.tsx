@@ -26,8 +26,7 @@ import NotFound from "@/features/errors/NotFound";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <StartupGate />
+      
 
       <Routes>
         <Route element={<Layout />}>
@@ -58,6 +57,5 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-    </BrowserRouter>
   );
 }
