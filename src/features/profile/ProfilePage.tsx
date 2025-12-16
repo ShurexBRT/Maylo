@@ -187,7 +187,7 @@ export default function ProfilePage() {
             <div className="flex-1" />
 
             <Link
-              to={`/write-review/${q.data.id}`}
+              to={`/reviews/write/${q.data.id}`}
               className="btn-primary"
             >
               Write a review

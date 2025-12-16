@@ -41,7 +41,7 @@ export default function App() {
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/saved" element={<SavedPage />} />
           <Route path="/faq" element={<FAQPage />} />
-          <Route path="/reviews/write/:companyId" element={<WriteReviewPage />} />
+          <Route path="/reviews/write/:id" element={<WriteReviewPage />} />
 
           {/* auth */}
           <Route path="/login" element={<LoginPage />} />
