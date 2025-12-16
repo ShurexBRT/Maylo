@@ -146,7 +146,7 @@ export default function SignupPage() {
     <main className="mx-auto max-w-md px-4 py-8">
       {!sent ? (
         <>
-          <h1 className="mb-4 text-2xl font-bold">Sign up</h1>
+          <h1 className="mb-4 text-2xl font-bold">Sign up TODO: Novi flow signup-a</h1>
           <form className="space-y-4" onSubmit={onSubmit}>
             <label className="block">
               <span className="text-sm font-medium">Email</span>
