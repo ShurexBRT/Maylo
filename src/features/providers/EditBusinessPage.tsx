@@ -1,90 +1,154 @@
+// src/features/providers/EditBusinessPage.tsx
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import BusinessWizard, {
-  BusinessFormValues,
-} from "./BusinessWizard";
+import BusinessWizard, { BusinessFormValues } from "./BusinessWizard";
 
 export default function EditBusinessPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const companyId = searchParams.get("id");
 
-  const [initialValues, setInitialValues] =
-    useState<BusinessFormValues | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialValues, setInitialValues] = useState<BusinessFormValues | null>(
+    null
+  );
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // ─────────────────────────────────────
+  // 1) Učitavanje firme
+  // ─────────────────────────────────────
   useEffect(() => {
-    if (!companyId) {
-      setLoadError("Missing company id.");
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    async function fetchCompany() {
-      try {
-        setLoading(true);
-        setLoadError(null);
+    async function load() {
+      setLoadingInitial(true);
+      setLoadError(null);
 
-        const { data, error } = await supabase
+      const idFromUrl = searchParams.get("id");
+
+      // user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        if (!cancelled) {
+          setLoadError(userError.message);
+          setLoadingInitial(false);
+        }
+        return;
+      }
+      if (!user) {
+        if (!cancelled) {
+          setLoadError("You need to be logged in.");
+          setLoadingInitial(false);
+        }
+        return;
+      }
+
+      let effectiveId = idFromUrl;
+
+      // ako nema id u URL-u → probaj da nađeš firmu po owner_user_id
+      if (!effectiveId) {
+        const { data: owned, error: ownedErr } = await supabase
           .from("companies")
-          .select("*")
-          .eq("id", companyId)
-          .single();
+          .select("id")
+          .eq("owner_user_id", user.id)
+          .limit(1)
+          .maybeSingle();
 
-        if (error) throw error;
-        if (!data) {
-          throw new Error("Company not found.");
+        if (ownedErr) {
+          if (!cancelled) {
+            setLoadError(ownedErr.message);
+            setLoadingInitial(false);
+          }
+          return;
         }
 
-        const langsRaw = data.languages;
-        let languages: string[] = [];
+        effectiveId = owned?.id ?? null;
+      }
 
-        if (Array.isArray(langsRaw)) {
-          languages = langsRaw.filter(Boolean);
-        } else if (typeof langsRaw === "string") {
-          languages = langsRaw
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean);
+      if (!effectiveId) {
+        if (!cancelled) {
+          setLoadError("No company found for this account.");
+          setLoadingInitial(false);
         }
+        return;
+      }
 
-        const mapped: BusinessFormValues = {
-          name: data.name ?? "",
-          category: data.category ?? "",
-          country: data.country ?? "",
-          city: data.city ?? "",
-          address: data.address ?? "",
-          email: data.email ?? "",
-          phone: data.phone ?? "",
-          languages,
-        };
+      const { data, error: companyErr } = await supabase
+        .from("companies")
+        .select(
+          "id, name, category, country, city, address, email, phone, languages"
+        )
+        .eq("id", effectiveId)
+        .maybeSingle();
 
-        setInitialValues(mapped);
-      } catch (err: any) {
-        console.error("fetchCompany error:", err);
-        setLoadError(err?.message || "Failed to load company data.");
-      } finally {
-        setLoading(false);
+      if (companyErr) {
+        if (!cancelled) {
+          setLoadError(companyErr.message);
+          setLoadingInitial(false);
+        }
+        return;
+      }
+
+      if (!data) {
+        if (!cancelled) {
+          setLoadError("Company not found.");
+          setLoadingInitial(false);
+        }
+        return;
+      }
+
+      const langs =
+        Array.isArray(data.languages) && data.languages.length > 0
+          ? data.languages.map((l: any) => String(l))
+          : [];
+
+      const values: BusinessFormValues = {
+        name: data.name ?? "",
+        category: data.category ?? "",
+        country: data.country ?? "",
+        city: data.city ?? "",
+        address: data.address ?? "",
+        email: data.email ?? "",
+        phone: data.phone ?? "",
+        languages: langs,
+      };
+
+      if (!cancelled) {
+        setCompanyId(data.id);
+        setInitialValues(values);
+        setLoadingInitial(false);
       }
     }
 
-    fetchCompany();
-  }, [companyId]);
+    load();
 
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
+  // ─────────────────────────────────────
+  // 2) Submit (update)
+  // ─────────────────────────────────────
   async function handleUpdate(values: BusinessFormValues) {
-    if (!companyId) throw new Error("Missing company id.");
+    if (!companyId) {
+      throw new Error("Missing company id.");
+    }
 
     const payload = {
       name: values.name.trim(),
       category: values.category.trim(),
-      country: values.country.trim(),
-      city: values.city.trim(),
-      address: values.address.trim(),
+      country: values.country,
+      city: values.city,
+      address: values.address?.trim() || null,
       email: values.email.trim(),
       phone: values.phone.trim(),
-      languages: values.languages.join(","), // isti format kao kod create-a
+      languages: values.languages, // opet: niz stringova za text[]
       updated_at: new Date().toISOString(),
     };
 
@@ -93,31 +157,22 @@ export default function EditBusinessPage() {
       .update(payload)
       .eq("id", companyId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("[EditBusinessPage] update error:", error.message);
+      throw error;
+    }
 
     navigate(`/profile/${companyId}`);
   }
 
-  if (!companyId) {
-    return (
-      <main className="max-w-4xl mx-auto px-4 py-10">
-        <h1 className="text-2xl md:text-3xl font-semibold mb-4">
-          Edit your business
-        </h1>
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          Missing company id.
-        </div>
-      </main>
-    );
-  }
-
+  // ─────────────────────────────────────
+  // 3) Render
+  // ─────────────────────────────────────
   if (loadError) {
     return (
-      <main className="max-w-4xl mx-auto px-4 py-10">
-        <h1 className="text-2xl md:text-3xl font-semibold mb-4">
-          Edit your business
-        </h1>
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        <h1 className="mb-4 text-2xl font-semibold">Edit your business</h1>
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {loadError}
         </div>
       </main>
@@ -127,8 +182,8 @@ export default function EditBusinessPage() {
   return (
     <BusinessWizard
       mode="edit"
-      initialValues={initialValues || undefined}
-      loadingInitial={loading}
+      initialValues={initialValues ?? undefined}
+      loadingInitial={loadingInitial}
       onSubmit={handleUpdate}
     />
   );

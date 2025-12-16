@@ -1,99 +1,127 @@
 // src/components/Drawer.tsx
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useUI } from "@/lib/store";
 import { useSession, useProfile, useCanAddBusiness } from "@/lib/authState";
 import { signOutTo } from "@/lib/auth";
 
 export default function Drawer() {
-  const navigate = useNavigate();
-  const { drawerOpen, setDrawer } = useUI();
+  const { drawerOpen, closeDrawer } = useUI();
+  const location = useLocation();
+
   const { userId } = useSession();
   const { profile } = useProfile(userId);
   const canAddBusiness = useCanAddBusiness(userId, profile?.role);
 
-  const close = () => setDrawer(false);
+  const isActive = (path: string) => location.pathname === path;
+  const handleClose = () => closeDrawer();
 
   return (
-    <>
-      {/* backdrop */}
-      <div
-        className={`fixed inset-0 z-[900] bg-black/30 transition-opacity ${
-          drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={close}
+    <aside
+      aria-hidden={!drawerOpen}
+      className={`fixed top-0 right-0 z-[1000] h-screen w-72 bg-white shadow-2xl transition-transform duration-300 ${
+        drawerOpen ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      {/* overlay – klik van menija zatvara ga */}
+      <button
+        type="button"
+        aria-label="Close navigation"
+        className="absolute left-[-9999px] top-0 h-0 w-0"
+        onClick={handleClose}
       />
 
-      {/* panel */}
-      <aside
-        className={`fixed top-0 right-0 z-[1000] h-screen w-72 bg-white shadow-2xl 
-        transition-transform duration-300 transform ${
-          drawerOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        aria-hidden={!drawerOpen}
-      >
-        <div className="p-4 border-b flex items-center justify-between">
-          <span className="text-xl font-semibold">Maylo</span>
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={close}
-            aria-label="Close navigation"
-          >
-            ×
-          </button>
-        </div>
+      <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100">
+        <span className="text-sm font-semibold">Menu</span>
+        <button
+          type="button"
+          onClick={handleClose}
+          className="text-gray-500 hover:text-gray-700"
+          aria-label="Close navigation"
+        >
+          ✕
+        </button>
+      </div>
 
-        <nav className="p-2">
-          <ul className="space-y-1">
+      <nav className="p-4 text-sm">
+        <ul className="space-y-1">
+          {/* MAIN NAV */}
+          <li>
+            <Link
+              to="/"
+              onClick={handleClose}
+              className={`block rounded-md px-4 py-2 ${
+                isActive("/") ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50"
+              }`}
+            >
+              Home
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to="/search"
+              onClick={handleClose}
+              className={`block rounded-md px-4 py-2 ${
+                isActive("/search")
+                  ? "bg-blue-50 text-blue-700"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              Search
+            </Link>
+          </li>
+
+          {userId && (
             <li>
               <Link
                 to="/saved"
-                onClick={close}
-                className="block px-4 py-3 hover:bg-gray-50 rounded-md"
+                onClick={handleClose}
+                className={`block rounded-md px-4 py-2 ${
+                  isActive("/saved")
+                    ? "bg-blue-50 text-blue-700"
+                    : "hover:bg-gray-50"
+                }`}
               >
                 Saved
               </Link>
             </li>
+          )}
 
-            {userId && (
-              <li>
-                <Link
-                  to="/account"
-                  onClick={close}
-                  className="block px-4 py-3 hover:bg-gray-50 rounded-md"
-                >
-                  My Account
-                </Link>
-              </li>
-            )}
+          <li>
+            <Link
+              to="/account"
+              onClick={handleClose}
+              className={`block rounded-md px-4 py-2 ${
+                isActive("/account")
+                  ? "bg-blue-50 text-blue-700"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              Account &amp; Settings
+            </Link>
+          </li>
 
-            {userId && (
-              <li>
-                <Link
-                  to="/settings"
-                  onClick={close}
-                  className="block px-4 py-3 hover:bg-gray-50 rounded-md"
-                >
-                  Settings
-                </Link>
-              </li>
-            )}
+          {/* PROVIDER BLOK */}
+          {userId &&
+            (profile?.role === "provider" || profile?.role === "admin") && (
+              <li className="mt-4 border-t border-slate-100 pt-4">
+                <p className="px-4 mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                  Service provider
+                </p>
 
-            {/* Provider UX */}
-            {userId && (profile?.role === "provider" || profile?.role === "admin") && (
-              <li>
                 {canAddBusiness ? (
                   <Link
                     to="/provider/onboard"
-                    onClick={close}
-                    className="block px-4 py-3 hover:bg-gray-50 rounded-md"
+                    onClick={handleClose}
+                    className="block px-4 py-2 rounded-md hover:bg-gray-50"
                   >
                     Add your business
                   </Link>
                 ) : (
                   <Link
                     to="/provider/edit"
-                    onClick={close}
-                    className="block px-4 py-3 hover:bg-gray-50 rounded-md"
+                    onClick={handleClose}
+                    className="block px-4 py-2 rounded-md hover:bg-gray-50"
                   >
                     Edit your business
                   </Link>
@@ -101,44 +129,35 @@ export default function Drawer() {
               </li>
             )}
 
-            {/* Auth actions */}
-            {!userId ? (
-              <>
-                <li>
-                  <Link
-                    to="/login"
-                    onClick={close}
-                    className="block px-4 py-3 hover:bg-gray-50 rounded-md"
-                  >
-                    Login
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/signup"
-                    onClick={close}
-                    className="block px-4 py-3 hover:bg-gray-50 rounded-md"
-                  >
-                    Sign up
-                  </Link>
-                </li>
-              </>
-            ) : (
-              <li>
-                <button
-                  onClick={async () => {
-                    close();
-                    await signOutTo("/welcome");
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-md text-red-600"
-                >
-                  Logout
-                </button>
-              </li>
-            )}
-          </ul>
-        </nav>
-      </aside>
-    </>
+          {/* AUTH BLOK */}
+          {!userId && (
+            <li className="mt-4 border-t border-slate-100 pt-4">
+              <Link
+                to="/login"
+                onClick={handleClose}
+                className="block w-full rounded-md bg-blue-600 px-4 py-2 text-center text-white hover:bg-blue-700"
+              >
+                Log in / Sign up
+              </Link>
+            </li>
+          )}
+
+          {userId && (
+            <li className="mt-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  handleClose();
+                  await signOutTo("/welcome");
+                }}
+                className="w-full rounded-md px-4 py-2 text-left text-red-600 hover:bg-gray-50"
+              >
+                Logout
+              </button>
+            </li>
+          )}
+        </ul>
+      </nav>
+    </aside>
   );
 }
