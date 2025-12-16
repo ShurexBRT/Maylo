@@ -5,6 +5,7 @@ import Layout from "./Layout";
 import StartupGate from "./StartupGate";
 
 // pages (prilagodi import putanje kako su kod tebe)
+import WelcomePage from "@/features/welcome/WelcomePage";
 import HomePage from "@/features/search/HomePage";
 import ResultsPage from "@/features/results/ResultsPage";
 import ProfilePage from "@/features/profile/ProfilePage";
@@ -35,6 +36,7 @@ export default function App() {
           <Route index element={<HomePage />} />
 
           {/* public */}
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/saved" element={<SavedPage />} />
