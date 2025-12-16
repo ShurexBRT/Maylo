@@ -1,123 +1,114 @@
 // src/features/reviews/WriteReviewPage.tsx
-import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from 'react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useCreateReview } from './hooks'
+import { supabase } from '@/lib/supabase'
+import '@/styles/globals.css'
 
-import { useCreateReview } from "./useCreateReview";
+function Stars({ value, onPick }: { value: number; onPick: (n: number) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onPick(n)}
+          className="text-2xl leading-none"
+          aria-label={`Rate ${n}`}
+        >
+          <span className={n <= value ? 'text-amber-400' : 'text-gray-300'}>★</span>
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function WriteReviewPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const createReview = useCreateReview();
+  const { id } = useParams()
+  const companyId = id ?? ''
+  const nav = useNavigate()
+  const create = useCreateReview()
 
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
-  if (!id) {
-    // ako je ruta pogrešna
-    return (
-      <section className="mx-auto max-w-xl p-4">
-        <p className="text-center text-sm text-red-600">
-          Missing company id.
-        </p>
-      </section>
-    );
-  }
+  const canSubmit = useMemo(() => companyId && rating >= 1 && rating <= 5, [companyId, rating])
 
-  const onSubmit = async () => {
-    setError(null);
+  async function onSubmit() {
+    setError(null)
 
-    const trimmed = comment.trim();
-
-    if (!rating) {
-      setError("Please select a rating.");
-      return;
+    // guard: mora user
+    const { data } = await supabase.auth.getUser()
+    if (!data?.user) {
+      nav(`/login?next=/reviews/write/${companyId}`)
+      return
     }
-    if (trimmed.length < 10) {
-      setError("Please write at least a few words about your experience.");
-      return;
+
+    if (!canSubmit) {
+      setError('Pick a rating (1–5).')
+      return
     }
 
     try {
-      await createReview.mutateAsync({
-        company_id: id,
+      await create.mutateAsync({
+        company_id: companyId,
         rating,
-        comment: trimmed,
-      });
-
-      // posle uspeha – nazad na profil firme
-      navigate(`/profile/${id}`);
-    } catch (err) {
-      console.error(err);
-      setError("Could not submit review. Please try again.");
+        comment: comment.trim() ? comment.trim() : undefined,
+      })
+      nav(`/profile/${companyId}`, { replace: true })
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to submit review.')
     }
-  };
+  }
 
-  const disabled = createReview.isPending;
+  if (!companyId) {
+    return (
+      <main className="max-w-xl mx-auto p-6">
+        <div className="card p-4">Missing company id.</div>
+      </main>
+    )
+  }
 
   return (
-    <section className="mx-auto max-w-xl p-4">
-      <h1 className="mb-4 text-2xl font-bold text-blue-900">
-        Write a review
-      </h1>
+    <main className="max-w-xl mx-auto p-6">
+      <h1 className="text-2xl font-bold text-blue-900 mb-4">Write a review</h1>
 
-      <div className="rounded-xl border bg-white p-5 shadow-sm">
-        {/* Zvezdice */}
-        <div className="mb-4 flex items-center gap-2">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setRating(n)}
-              className="text-2xl"
-              aria-label={`Rate ${n}`}
-            >
-              <span
-                className={
-                  n <= rating ? "text-amber-400" : "text-gray-300"
-                }
-              >
-                ★
-              </span>
-            </button>
-          ))}
+      <div className="bg-white rounded-xl border shadow-sm p-5">
+        <div className="mb-4">
+          <p className="text-sm text-slate-600 mb-2">Your rating</p>
+          <Stars value={rating} onPick={setRating} />
         </div>
 
-        {/* Komentar */}
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Your review
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Your review</label>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={5}
-          className="w-full resize-y rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          className="w-full resize-y rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
           placeholder="Share a few details about your experience…"
         />
 
-        {error && (
-          <p className="mt-2 text-xs text-red-600">{error}</p>
-        )}
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-4 flex gap-3">
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white font-semibold px-4 py-2 hover:bg-blue-700 transition disabled:opacity-60"
+            disabled={create.isPending}
             onClick={onSubmit}
-            disabled={disabled}
           >
-            {disabled ? "Submitting…" : "Submit"}
+            {create.isPending ? 'Submitting…' : 'Submit'}
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate(`/profile/${id}`)}
+          <Link
+            to={`/profile/${companyId}`}
             className="inline-flex items-center justify-center rounded-lg border px-4 py-2 hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Link>
         </div>
       </div>
-    </section>
-  );
+    </main>
+  )
 }
