@@ -1,17 +1,27 @@
-// src/app/Layout.tsx
 import { Outlet } from "react-router-dom";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Drawer from "@/components/Drawer";
+import Footer from "@/components/Footer";
+import { useUI } from "@/lib/store";
 
 export default function Layout() {
+  const { drawerOpen, setDrawer } = useUI();
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div
+      className="min-h-screen"
+      onClick={() => {
+        // klik po “pozadini” zatvara drawer
+        if (drawerOpen) setDrawer(false);
+      }}
+    >
       <Header />
       <Drawer />
-      <main className="flex-1">
+
+      <main onClick={(e) => e.stopPropagation()}>
         <Outlet />
       </main>
+
       <Footer />
     </div>
   );
