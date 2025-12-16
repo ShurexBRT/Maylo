@@ -13,6 +13,7 @@ import SettingsPage from "@/features/settings/SettingsPage";
 import AccountPage from "@/features/account/AccountPage";
 
 import LoginPage from "@/features/auth/LoginPage";
+import SignupPage from "@/features/auth/SignupPage";
 import AuthCallbackPage from "@/features/auth/AuthCallbackPage";
 import ResetPasswordPage from "@/features/auth/ResetPasswordPage";
 import SetPasswordPage from "@/features/auth/SetPasswordPage";
@@ -42,6 +43,7 @@ export default function App() {
 
           {/* auth */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} /> 
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/set-password" element={<SetPasswordPage />} />
